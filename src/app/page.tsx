@@ -1,65 +1,158 @@
-import Image from "next/image";
+import { prisma } from '@/lib/db';
+import { PageHeader, Card } from '@/components/ui';
+import { KpiCard } from '@/components/dashboard/KpiCard';
+import { ChartCard, type MonthlyPoint } from '@/components/dashboard/ChartCard';
+import { OverdueList } from '@/components/dashboard/OverdueList';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { DollarSign, BarChart3, AlertTriangle, Home } from 'lucide-react';
 
-export default function Home() {
+const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+
+async function getData() {
+  const now        = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sixMonAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const [
+    unitCount, vacantCount, occupiedCount,
+    overdueCharges,
+    thisMonthCharged, thisMonthPaid,
+    monthlyRaw,
+  ] = await Promise.all([
+    prisma.unit.count(),
+    prisma.unit.count({ where: { status: 'vacant' } }),
+    prisma.unit.count({ where: { status: 'occupied' } }),
+    prisma.rentCharge.findMany({
+      where: { status: 'overdue' },
+      include: {
+        tenant: { select: { name: true } },
+        unit:   { select: { unitNo: true, property: { select: { title: true } } } },
+      },
+      orderBy: { dueDate: 'asc' },
+      take: 10,
+    }),
+    prisma.rentCharge.aggregate({
+      where: { periodStart: { gte: monthStart } },
+      _sum: { chargeAmount: true },
+    }),
+    prisma.rentCharge.aggregate({
+      where: { periodStart: { gte: monthStart } },
+      _sum: { paidAmount: true },
+    }),
+    prisma.rentCharge.groupBy({
+      by: ['periodStart'],
+      where: { periodStart: { gte: sixMonAgo } },
+      _sum: { chargeAmount: true, paidAmount: true },
+      orderBy: { periodStart: 'asc' },
+    }),
+  ]);
+
+  const charged     = Number(thisMonthCharged._sum.chargeAmount ?? 0);
+  const paid        = Number(thisMonthPaid._sum.paidAmount ?? 0);
+  const outstanding = overdueCharges.reduce(
+    (s, c) => s + Number(c.chargeAmount) - Number(c.paidAmount), 0
+  );
+  const occupancy = unitCount > 0 ? Math.round((occupiedCount / unitCount) * 100) : 0;
+
+  const chartData: MonthlyPoint[] = monthlyRaw.map(m => ({
+    month:     TR_MONTHS[new Date(m.periodStart).getMonth()],
+    alacak:    Number(m._sum.chargeAmount ?? 0),
+    tahsilat:  Number(m._sum.paidAmount   ?? 0),
+  }));
+
+  return {
+    unitCount, vacantCount, charged, paid, outstanding, occupancy,
+    overdueCharges, chartData,
+  };
+}
+
+// ── Legend dot ──────────────────────────────────────────
+function ChartLegend({ color, label }: { color: string; label: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'var(--muted)' }}>
+      <div style={{ width: 10, height: 3, borderRadius: 2, background: color }} />
+      {label}
     </div>
+  );
+}
+
+// ── Page ────────────────────────────────────────────────
+export default async function Dashboard() {
+  const d   = await getData();
+  const fmt = (n: number) => `₺${n.toLocaleString('tr-TR')}`;
+
+  const now       = new Date();
+  const monthName = now.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  const collectPct = d.charged > 0 ? Math.round((d.paid / d.charged) * 100) : 0;
+
+  return (
+    <>
+      <PageHeader
+        title="Dashboard"
+        desc={`Genel bakış — ${monthName}`}
+      />
+
+      {/* ── KPI Row ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <KpiCard
+          icon={DollarSign}
+          label="Bu Ay Alacak"
+          value={fmt(d.charged)}
+          color="blue"
+        />
+        <KpiCard
+          icon={BarChart3}
+          label="Bu Ay Tahsilat"
+          value={fmt(d.paid)}
+          color="green"
+          trend="up"
+          sub={`%${collectPct} tahsil edildi`}
+        />
+        <KpiCard
+          icon={AlertTriangle}
+          label="Toplam Gecikme"
+          value={fmt(d.outstanding)}
+          color="red"
+          trend={d.outstanding > 0 ? 'down' : undefined}
+          sub={`${d.overdueCharges.length} geciken alacak`}
+        />
+        <KpiCard
+          icon={Home}
+          label="Doluluk"
+          value={`%${d.occupancy}`}
+          color="amber"
+          sub={`${d.unitCount - d.vacantCount} / ${d.unitCount} daire dolu`}
+        />
+      </div>
+
+      {/* ── Chart + Quick Actions ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16, alignItems: 'start' }}>
+        <Card>
+          <div style={{
+            padding: '20px 24px 0',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          }}>
+            <div>
+              <p style={{ fontWeight: 600, fontSize: '0.9375rem', margin: '0 0 2px', color: 'var(--text)' }}>
+                Alacak & Tahsilat
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>Son 6 ay</p>
+            </div>
+            <div style={{ display: 'flex', gap: 16, paddingTop: 4 }}>
+              <ChartLegend color="var(--primary)" label="Alacak" />
+              <ChartLegend color="var(--green)"   label="Tahsilat" />
+            </div>
+          </div>
+          <div style={{ padding: '16px 16px 20px' }}>
+            <ChartCard data={d.chartData} />
+          </div>
+        </Card>
+
+        <QuickActions />
+      </div>
+
+      {/* ── Overdue list ── */}
+      <OverdueList charges={d.overdueCharges} />
+    </>
   );
 }

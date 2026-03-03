@@ -1,26 +1,164 @@
 @import "tailwindcss";
 
+/* ── Design tokens ─────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surface */
+  --bg:       #F8FAFC;   /* slate-50  */
+  --surface:  #FFFFFF;
+  --surface2: #F8FAFC;
+
+  /* Border */
+  --border:   #E2E8F0;   /* slate-200 */
+  --border-s: #CBD5E1;   /* slate-300 */
+
+  /* Text */
+  --text:     #0F172A;   /* slate-900 */
+  --muted:    #64748B;   /* slate-500 */
+  --subtle:   #94A3B8;   /* slate-400 */
+
+  /* Primary */
+  --primary:      #2563EB;
+  --primary-h:    #1D4ED8;
+  --primary-bg:   #EFF6FF;
+  --primary-ring: #BFDBFE;
+
+  /* Status */
+  --green:    #16A34A; --green-bg:  #F0FDF4;
+  --red:      #DC2626; --red-bg:    #FEF2F2;
+  --amber:    #D97706; --amber-bg:  #FFFBEB;
+  --gray:     #64748B; --gray-bg:   #F1F5F9;
+
+  /* Shadow */
+  --shadow-card: 0 4px 20px rgba(0,0,0,0.04);
+  --shadow-modal: 0 20px 60px rgba(15,23,42,0.12);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ── Dark mode ──────────────────────────────────────── */
+/* Manual:  <html data-theme="dark">                     */
+/* System:  prefers-color-scheme when not overridden     */
 
+[data-theme="dark"] {
+  --bg:       #0F172A; --surface:  #1E293B; --surface2: #0F172A;
+  --border:   #334155; --border-s: #475569;
+  --text:     #F1F5F9; --muted: #94A3B8; --subtle: #64748B;
+  --primary-bg:   rgba(37,99,235,0.18); --primary-ring: rgba(37,99,235,0.35);
+  --green-bg:  rgba(22,163,74,0.18); --red-bg:   rgba(220,38,38,0.18);
+  --amber-bg:  rgba(217,119,6,0.18); --gray-bg:  rgba(100,116,139,0.18);
+  --shadow-card:  0 4px 20px rgba(0,0,0,0.25);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.5);
+}
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --bg:       #0F172A; --surface:  #1E293B; --surface2: #0F172A;
+    --border:   #334155; --border-s: #475569;
+    --text:     #F1F5F9; --muted: #94A3B8; --subtle: #64748B;
+    --primary-bg:   rgba(37,99,235,0.18); --primary-ring: rgba(37,99,235,0.35);
+    --green-bg:  rgba(22,163,74,0.18); --red-bg:   rgba(220,38,38,0.18);
+    --amber-bg:  rgba(217,119,6,0.18); --gray-bg:  rgba(100,116,139,0.18);
+    --shadow-card:  0 4px 20px rgba(0,0,0,0.25);
+    --shadow-modal: 0 20px 60px rgba(0,0,0,0.5);
   }
 }
 
+/* ── Sidebar width CSS variable ─────────────────────── */
+:root                    { --sidebar-w: 240px; }
+html.sidebar-collapsed   { --sidebar-w: 56px;  }
+
+/* ── Reset ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+
+/* ── Base ──────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
+
+/* ── Form elements ─────────────────────────────────── */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 13px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* ── Focus-visible ring (accessibility) ─────────────── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Suppress focus ring for mouse users */
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── Table row hover ───────────────────────────────── */
+.tr-hover:hover { background: var(--surface2); }
+.tr-click { cursor: pointer; }
+
+/* ── Sidebar nav links ──────────────────────────────── */
+.sidebar-link {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 9px; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 400;
+  color: var(--muted); background: transparent;
+  text-decoration: none;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap; overflow: hidden;
+}
+.sidebar-link:hover { background: var(--surface); color: var(--text); }
+.sidebar-link.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+
+/* ── Toast animations ───────────────────────────────── */
+@keyframes toast-in  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(0);   } to { opacity:0; transform:translateY(6px); } }
+.toast-item { animation: toast-in 0.2s ease forwards; }
+
+/* ── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-s); border-radius: 3px; }
+
+/* ── Print styles ───────────────────────────────────── */
+@media print {
+  aside, header, .no-print { display: none !important; }
+  body { margin: 0 !important; }
+  main > div { max-width: 100% !important; padding: 0 !important; }
+  .kpi-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+  table { font-size: 11px; }
+  th, td { padding: 6px 10px !important; }
+  a { color: inherit !important; text-decoration: none !important; }
+}
+
+/* ── Spin animation ─────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── KPI card hover lift ────────────────────────────── */
+.kpi-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.09); }
+
+/* ── Skeleton ───────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.skeleton { background: var(--surface2); animation: skeleton-shimmer 1.6s ease-in-out infinite; }

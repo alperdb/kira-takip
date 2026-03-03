@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── 1. OWNERS ───────────────────────────────────────────────
+model Owner {
+  id         Int        @id @default(autoincrement())
+  name       String
+  phone      String?
+  email      String?
+  nationalId String?    @map("national_id")
+  address    String?
+  notes      String?
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  properties Property[]
+
+  @@map("owners")
+}
+
+// ─── 2. PROPERTIES ───────────────────────────────────────────
+model Property {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int      @map("owner_id")
+  title     String
+  address   String?
+  city      String?
+  district  String?
+  type      PropertyType @default(apartment)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  owner    Owner      @relation(fields: [ownerId], references: [id])
+  units    Unit[]
+  expenses Expense[]
+
+  @@map("properties")
+}
+
+enum PropertyType {
+  apartment
+  villa
+  commercial
+  mixed
+}
+
+// ─── 3. UNITS ────────────────────────────────────────────────
+model Unit {
+  id         Int        @id @default(autoincrement())
+  propertyId Int        @map("property_id")
+  unitNo     String     @map("unit_no")
+  floor      Int?
+  type       UnitType   @default(residential)
+  grossSqm   Decimal?   @map("gross_sqm") @db.Decimal(8, 2)
+  netSqm     Decimal?   @map("net_sqm")   @db.Decimal(8, 2)
+  status     UnitStatus @default(vacant)
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  property    Property     @relation(fields: [propertyId], references: [id])
+  contracts   Contract[]
+  rentCharges RentCharge[]
+
+  @@map("units")
+}
+
+enum UnitType {
+  residential
+  commercial
+  parking
+  storage
+}
+
+enum UnitStatus {
+  vacant
+  occupied
+  maintenance
+}
+
+// ─── 4. TENANTS ──────────────────────────────────────────────
+model Tenant {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String?
+  email      String?
+  nationalId String?  @map("national_id")
+  address    String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  contracts   Contract[]
+  rentCharges RentCharge[]
+
+  @@map("tenants")
+}
+
+// ─── 5. CONTRACTS ────────────────────────────────────────────
+model Contract {
+  id                Int            @id @default(autoincrement())
+  unitId            Int            @map("unit_id")
+  tenantId          Int            @map("tenant_id")
+  startDate         DateTime       @map("start_date") @db.Date
+  endDate           DateTime?      @map("end_date")   @db.Date
+  rentAmount        Decimal        @map("rent_amount") @db.Decimal(12, 2)
+  currency          Currency       @default(TRY)
+  paymentDay        Int            @default(1) @map("payment_day")  // max 28
+  depositAmount     Decimal        @default(0) @map("deposit_amount") @db.Decimal(12, 2)
+  depositStatus     DepositStatus  @default(held) @map("deposit_status")
+  depositDate       DateTime?      @map("deposit_date") @db.Date
+  status            ContractStatus @default(active)
+  terminationDate   DateTime?      @map("termination_date") @db.Date
+  terminationReason String?        @map("termination_reason")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  unit                Unit                  @relation(fields: [unitId], references: [id])
+  tenant              Tenant                @relation(fields: [tenantId], references: [id])
+  increases           ContractIncrease[]
+  rentCharges         RentCharge[]
+  depositTransactions DepositTransaction[]
+
+  @@map("contracts")
+}
+
+enum Currency {
+  TRY
+  USD
+  EUR
+}
+
+enum DepositStatus {
+  held
+  returned
+  partial_returned
+  applied_to_debt
+  forfeited
+}
+
+enum ContractStatus {
+  active
+  terminated
+  expired
+  pending
+}
+
+// ─── 6. CONTRACT_INCREASES ───────────────────────────────────
+model ContractIncrease {
+  id            Int           @id @default(autoincrement())
+  contractId    Int           @map("contract_id")
+  effectiveDate DateTime      @map("effective_date") @db.Date
+  oldAmount     Decimal       @map("old_amount") @db.Decimal(12, 2)
+  newAmount     Decimal       @map("new_amount") @db.Decimal(12, 2)
+  reason        IncreaseReason
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@map("contract_increases")
+}
+
+enum IncreaseReason {
+  annual
+  cpi
+  manual
+  renewal
+}
+
+// ─── 7. RENT_CHARGES ─────────────────────────────────────────
+model RentCharge {
+  id            Int          @id @default(autoincrement())
+  contractId    Int          @map("contract_id")
+  unitId        Int          @map("unit_id")
+  tenantId      Int          @map("tenant_id")
+  dueDate       DateTime     @map("due_date")      @db.Date
+  chargeAmount  Decimal      @map("charge_amount") @db.Decimal(12, 2)
+  paidAmount    Decimal      @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  periodStart   DateTime     @map("period_start")  @db.Date
+  periodEnd     DateTime     @map("period_end")    @db.Date
+  status        ChargeStatus @default(pending)
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  contract Contract  @relation(fields: [contractId], references: [id])
+  unit     Unit      @relation(fields: [unitId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  payments Payment[]
+
+  @@unique([contractId, periodStart])
+  @@map("rent_charges")
+}
+
+enum ChargeStatus {
+  pending
+  partial
+  paid
+  overdue
+  waived
+}
+
+// ─── 8. PAYMENTS ─────────────────────────────────────────────
+model Payment {
+  id           Int      @id @default(autoincrement())
+  rentChargeId Int      @map("rent_charge_id")
+  amount       Decimal  @db.Decimal(12, 2)
+  paidAt       DateTime @map("paid_at")
+  method       PaymentMethod @default(cash)
+  referenceNo  String?  @map("reference_no")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  rentCharge RentCharge @relation(fields: [rentChargeId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  cash
+  bank
+  eft
+  check
+  other
+}
+
+// ─── 9. DEPOSIT_TRANSACTIONS ─────────────────────────────────
+model DepositTransaction {
+  id         Int                 @id @default(autoincrement())
+  contractId Int                 @map("contract_id")
+  type       DepositTransactionType
+  amount     Decimal             @db.Decimal(12, 2)
+  date       DateTime            @db.Date
+  notes      String?
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@map("deposit_transactions")
+}
+
+enum DepositTransactionType {
+  collected
+  refunded
+  partial_refund
+  applied_to_debt
+  forfeited
+}
+
+// ─── 10. EXPENSES ────────────────────────────────────────────
+model Expense {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int?     @map("property_id")
+  unitId      Int?     @map("unit_id")
+  category    String?
+  amount      Decimal  @db.Decimal(12, 2)
+  date        DateTime @db.Date
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  property Property? @relation(fields: [propertyId], references: [id])
+
+  @@map("expenses")
+}
