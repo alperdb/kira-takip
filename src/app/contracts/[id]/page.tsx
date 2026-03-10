@@ -73,6 +73,7 @@ export default async function ContractDetailPage({ params }: Params) {
             contractId={contract.id}
             endDate={contract.endDate?.toISOString().split('T')[0]}
             paymentDay={contract.paymentDay}
+            tenantName={contract.tenant.name}
           />
 
           {/* Sözleşme özeti */}

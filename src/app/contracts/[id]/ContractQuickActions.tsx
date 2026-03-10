@@ -1,28 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Download, Pencil, TrendingUp } from 'lucide-react';
+import { FileText, Download, Pencil, TrendingUp, CreditCard } from 'lucide-react';
 import {
   Btn, Card, toast,
   Modal, ModalBody, ModalFooter,
   Field, FieldRow, DateInput, NumberInput,
 } from '@/components/ui';
+import { PaymentModal } from '@/components/PaymentModal';
 
 interface Props {
   contractId:  number;
   endDate?:    string;
   paymentDay:  number;
+  tenantName?: string;
 }
 
-export function ContractQuickActions({ contractId, endDate: initEndDate, paymentDay: initPaymentDay }: Props) {
+export function ContractQuickActions({ contractId, endDate: initEndDate, paymentDay: initPaymentDay, tenantName }: Props) {
   const router = useRouter();
 
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [editOpen,   setEditOpen]   = useState(false);
-  const [formEndDate, setFormEndDate] = useState(initEndDate ?? '');
-  const [formPayDay,  setFormPayDay]  = useState(String(initPaymentDay));
-  const [saving,     setSaving]     = useState(false);
+  const [pdfLoading,   setPdfLoading]   = useState(false);
+  const [editOpen,     setEditOpen]     = useState(false);
+  const [payOpen,      setPayOpen]      = useState(false);
+  const [outstanding,  setOutstanding]  = useState(0);
+  const [formEndDate,  setFormEndDate]  = useState(initEndDate ?? '');
+  const [formPayDay,   setFormPayDay]   = useState(String(initPaymentDay));
+  const [saving,       setSaving]       = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/contracts/${contractId}/payments`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setOutstanding(d.totalOutstanding); })
+      .catch(() => {});
+  }, [contractId]);
 
   async function handleDownloadPdf() {
     setPdfLoading(true);
@@ -118,6 +129,21 @@ export function ContractQuickActions({ contractId, endDate: initEndDate, payment
             Sözleşme Yenile
           </Btn>
 
+          {outstanding > 0 && (
+            <Btn
+              style={{ justifyContent: 'flex-start', gap: 8, width: '100%' }}
+              onClick={() => setPayOpen(true)}
+            >
+              <CreditCard size={14} />
+              Ödeme Al
+              <span style={{
+                marginLeft: 'auto', fontSize: '0.75rem', fontFamily: 'ui-monospace, monospace',
+              }}>
+                ₺{outstanding.toLocaleString('tr-TR')}
+              </span>
+            </Btn>
+          )}
+
         </div>
       </Card>
 
@@ -148,6 +174,18 @@ export function ContractQuickActions({ contractId, endDate: initEndDate, payment
           </Btn>
         </ModalFooter>
       </Modal>
+
+      <PaymentModal
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        onSuccess={() => {
+          setOutstanding(0);
+          router.refresh();
+        }}
+        endpoint={`/api/contracts/${contractId}/payments`}
+        remaining={outstanding}
+        label={tenantName}
+      />
     </>
   );
 }

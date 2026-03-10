@@ -5,12 +5,10 @@ import { RefreshCw, Receipt } from 'lucide-react';
 import {
   Card, PageHeader, DataTable, Td, TRow,
   Badge, Money, Btn, EmptyState, TableSkeleton,
-  Modal, ModalBody, ModalFooter,
-  Field, SectionLabel, Select,
   toast,
 } from '@/components/ui';
-import { NumberInput } from '@/components/ui';
 import { DeleteButton } from '@/components/DeleteButton';
+import { PaymentModal } from '@/components/PaymentModal';
 import { month } from '@/lib/format';
 
 type Charge = {
@@ -42,11 +40,7 @@ export default function ChargesPage() {
   const [loading,    setLoading]    = useState(true);
   const [generating, setGenerating] = useState(false);
 
-  const [payModal,   setPayModal]   = useState<{ chargeId: number; remaining: number } | null>(null);
-  const [payAmount,  setPayAmount]  = useState('');
-  const [payMethod,  setPayMethod]  = useState('bank');
-  const [payRef,     setPayRef]     = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [payModal, setPayModal] = useState<{ chargeId: number; remaining: number; label: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,37 +71,8 @@ export default function ChargesPage() {
     }
   }
 
-  async function submitPayment() {
-    if (!payModal || !payAmount) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/charges/${payModal.chargeId}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Number(payAmount), method: payMethod, referenceNo: payRef }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Hata');
-      toast.success('Ödeme başarıyla kaydedildi');
-      closeModal();
-      load();
-    } catch (e: unknown) {
-      toast.error((e as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function openModal(chargeId: number, remaining: number) {
-    setPayModal({ chargeId, remaining });
-    setPayAmount(String(remaining));
-    setPayMethod('bank');
-    setPayRef('');
-  }
-
-  function closeModal() {
-    setPayModal(null);
-    setPayAmount('');
-    setPayRef('');
+  function openModal(chargeId: number, remaining: number, label: string) {
+    setPayModal({ chargeId, remaining, label });
   }
 
   return (
@@ -195,7 +160,7 @@ export default function ChargesPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {canPay && (
                         <button
-                          onClick={() => openModal(c.id, balance)}
+                          onClick={() => openModal(c.id, balance, `${c.tenant.name} — ${c.unit.property.title} · ${c.unit.unitNo}`)}
                           aria-label={`${c.tenant.name} için ödeme al`}
                           style={{
                             padding: '4px 12px', borderRadius: 6,
@@ -223,50 +188,16 @@ export default function ChargesPage() {
         )}
       </Card>
 
-      {/* ── Payment Modal ── */}
-      <Modal open={!!payModal} onClose={closeModal} title="Ödeme Al" width={420}>
-        <ModalBody>
-          <SectionLabel>Ödeme Bilgileri</SectionLabel>
-
-          <Field label="Tutar (₺)" required hint={`Kalan: ₺${payModal?.remaining.toLocaleString('tr-TR') ?? ''}`}>
-            <NumberInput
-              value={payAmount}
-              onChange={e => setPayAmount(e.target.value)}
-              min={0.01}
-              step={0.01}
-            />
-          </Field>
-
-          <Field label="Ödeme Yöntemi">
-            <Select value={payMethod} onChange={e => setPayMethod(e.target.value)}>
-              <option value="bank">Banka Transferi</option>
-              <option value="cash">Nakit</option>
-              <option value="eft">EFT</option>
-              <option value="check">Çek</option>
-              <option value="other">Diğer</option>
-            </Select>
-          </Field>
-
-          <Field label="Dekont / Havale No" hint="Opsiyonel referans numarası">
-            <input
-              type="text"
-              value={payRef}
-              onChange={e => setPayRef(e.target.value)}
-              placeholder="Opsiyonel"
-            />
-          </Field>
-        </ModalBody>
-
-        <ModalFooter>
-          <Btn variant="ghost" onClick={closeModal}>İptal</Btn>
-          <Btn
-            onClick={submitPayment}
-            disabled={!payAmount || Number(payAmount) <= 0 || submitting}
-          >
-            {submitting ? 'Kaydediliyor...' : 'Ödemeyi Kaydet'}
-          </Btn>
-        </ModalFooter>
-      </Modal>
+      {payModal && (
+        <PaymentModal
+          open={!!payModal}
+          onClose={() => setPayModal(null)}
+          onSuccess={load}
+          endpoint={`/api/charges/${payModal.chargeId}/payments`}
+          remaining={payModal.remaining}
+          label={payModal.label}
+        />
+      )}
     </>
   );
 }
