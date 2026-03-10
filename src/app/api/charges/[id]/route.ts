@@ -21,6 +21,28 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 }
 
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const chargeId = Number(id);
+    if (isNaN(chargeId)) {
+      return NextResponse.json({ error: 'Geçersiz id' }, { status: 400 });
+    }
+    const charge = await prisma.rentCharge.findUnique({ where: { id: chargeId } });
+    if (!charge) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+
+    // Ödemeleri ve alacağı aynı transaction'da sil
+    await prisma.$transaction([
+      prisma.payment.deleteMany({ where: { rentChargeId: chargeId } }),
+      prisma.rentCharge.delete({ where: { id: chargeId } }),
+    ]);
+
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+}
+
 // Tahakkuku sil değil, waived yap
 export async function PUT(req: NextRequest, { params }: Params) {
   try {

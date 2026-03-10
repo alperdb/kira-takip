@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Prevent Turbopack from bundling native Node.js modules
+  serverExternalPackages: ['pdfkit'],
+
   // Standalone mode: bundles Next.js + node_modules for Electron production
   output: 'standalone',
 
@@ -14,6 +17,12 @@ const nextConfig: NextConfig = {
       headers: [
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'X-Frame-Options',        value: 'DENY'    },
+      ],
+    },
+    {
+      source: '/api/(.*)',
+      headers: [
+        { key: 'Content-Type', value: 'application/json; charset=utf-8' },
       ],
     },
   ],

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
+import { DeleteButton } from '@/components/DeleteButton';
 import { Building2 } from 'lucide-react';
 import { date } from '@/lib/format';
 
@@ -15,6 +16,7 @@ const COLS = [
   { label: 'Tür'        },
   { label: 'Daire', center: true },
   { label: 'Kayıt'      },
+  { label: ''           },
 ];
 
 export default async function PropertiesPage() {
@@ -70,6 +72,9 @@ export default async function PropertiesPage() {
                   </Badge>
                 </Td>
                 <Td muted>{date(p.createdAt)}</Td>
+                <Td>
+                  <DeleteButton endpoint={`/api/properties/${p.id}`} label={p.title} errorAction={{ label: 'Dairelere Git', href: '/units' }} />
+                </Td>
               </TRow>
             ))}
           </DataTable>

@@ -9,4 +9,4 @@ export { Modal, ModalBody, ModalFooter } from './modal';
 export { Field, FieldRow, SectionLabel, FormAlert, TextInput, NumberInput, DateInput, Select } from './form';
 export { ProgressBar } from './ProgressBar';
 export { Toaster, toast } from './Toast';
-export type { ToastType, ToastItem } from './Toast';
+export type { ToastType, ToastItem, ToastAction, ToastOptions } from './Toast';

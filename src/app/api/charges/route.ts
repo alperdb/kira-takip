@@ -24,8 +24,9 @@ export async function GET(req: NextRequest) {
         } : {}),
       },
       include: {
-        tenant: { select: { id: true, name: true } },
-        unit:   { select: { id: true, unitNo: true, property: { select: { id: true, title: true } } } },
+        tenant:   { select: { id: true, name: true } },
+        unit:     { select: { id: true, unitNo: true, property: { select: { id: true, title: true } } } },
+        contract: { select: { currency: true } },
         payments: true,
       },
       orderBy: [{ periodStart: 'desc' }, { dueDate: 'asc' }],

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         },
         tenant: { select: { id: true, name: true, phone: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'desc' },
     });
     return NextResponse.json(contracts);
   } catch (e: unknown) {

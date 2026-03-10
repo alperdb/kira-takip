@@ -10,6 +10,7 @@ import {
   toast,
 } from '@/components/ui';
 import { NumberInput } from '@/components/ui';
+import { DeleteButton } from '@/components/DeleteButton';
 import { month } from '@/lib/format';
 
 type Charge = {
@@ -18,6 +19,9 @@ type Charge = {
   dueDate: string; periodStart: string;
   tenant: { name: string };
   unit: { unitNo: string; property: { title: string } };
+  contract: { currency: string };
+  exchangeRate:    number | null;
+  chargeAmountTry: number | null;
 };
 
 const COLS = [
@@ -56,14 +60,21 @@ export default function ChargesPage() {
 
   async function generate() {
     setGenerating(true);
-    await fetch('/api/charges?action=generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: new Date().toISOString() }),
-    });
-    toast.success('Alacaklar başarıyla oluşturuldu');
-    await load();
-    setGenerating(false);
+    try {
+      const res = await fetch('/api/charges?action=generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: new Date().toISOString() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Hata');
+      toast.success(`${data.created} alacak oluşturuldu`);
+      await load();
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function submitPayment() {
@@ -151,7 +162,22 @@ export default function ChargesPage() {
                   <Td muted>{c.unit.property.title} · {c.unit.unitNo}</Td>
                   <Td muted>{month(c.periodStart)}</Td>
                   <Td muted>{new Date(c.dueDate).toLocaleDateString('tr-TR')}</Td>
-                  <Td right><Money amount={c.chargeAmount} /></Td>
+                  <Td right>
+                    {c.chargeAmountTry != null && c.exchangeRate != null ? (
+                      <div style={{ textAlign: 'right' }}>
+                        <Money amount={c.chargeAmountTry} />
+                        <div style={{
+                          fontSize: '0.7rem', color: 'var(--subtle)', marginTop: 2,
+                          fontFamily: 'ui-monospace, monospace',
+                        }}>
+                          {Number(c.chargeAmount).toLocaleString('tr-TR')} {c.contract.currency}
+                          {' @ '}{c.exchangeRate.toLocaleString('tr-TR', { minimumFractionDigits: 4 })}
+                        </div>
+                      </div>
+                    ) : (
+                      <Money amount={c.chargeAmount} />
+                    )}
+                  </Td>
                   <Td right>
                     <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 600, color: 'var(--green)' }}>
                       ₺{Number(c.paidAmount).toLocaleString('tr-TR')}
@@ -166,21 +192,29 @@ export default function ChargesPage() {
                   </Td>
                   <Td><Badge status={c.status} /></Td>
                   <Td>
-                    {canPay && (
-                      <button
-                        onClick={() => openModal(c.id, balance)}
-                        aria-label={`${c.tenant.name} için ödeme al`}
-                        style={{
-                          padding: '4px 12px', borderRadius: 6,
-                          fontSize: '0.8125rem', fontWeight: 600,
-                          background: 'var(--primary-bg)', color: 'var(--primary)',
-                          border: '1px solid var(--primary-ring)', cursor: 'pointer',
-                          transition: 'all 0.12s',
-                        }}
-                      >
-                        Ödeme Al
-                      </button>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {canPay && (
+                        <button
+                          onClick={() => openModal(c.id, balance)}
+                          aria-label={`${c.tenant.name} için ödeme al`}
+                          style={{
+                            padding: '4px 12px', borderRadius: 6,
+                            fontSize: '0.8125rem', fontWeight: 600,
+                            background: 'var(--primary-bg)', color: 'var(--primary)',
+                            border: '1px solid var(--primary-ring)', cursor: 'pointer',
+                            transition: 'all 0.12s',
+                          }}
+                        >
+                          Ödeme Al
+                        </button>
+                      )}
+                      <DeleteButton
+                        endpoint={`/api/charges/${c.id}`}
+                        label={`${c.tenant.name} — ${c.unit.unitNo}`}
+                        onDeleted={load}
+                        warningText="Alacağa ait tüm ödeme kayıtları da silinir. Bu işlem geri alınamaz."
+                      />
+                    </div>
                   </Td>
                 </TRow>
               );

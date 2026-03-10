@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, EmptyState, Badge, Money } from '@/components/ui';
 import { ContractModal } from './ContractModal';
-import { FileText } from 'lucide-react';
+import { DeleteButton } from '@/components/DeleteButton';
+import { TerminateButton } from '@/components/TerminateButton';
+import { FileText, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
 
 const COLS = [
   { label: 'Daire'    },
@@ -11,6 +14,9 @@ const COLS = [
   { label: 'Kira / Ay',  right: true },
   { label: 'Depozito',   right: true },
   { label: 'Durum'    },
+  { label: ''         },  // Yenile linki
+  { label: ''         },  // Sonlandır
+  { label: ''         },  // Delete butonu
 ];
 
 export default async function ContractsPage() {
@@ -20,7 +26,7 @@ export default async function ContractsPage() {
         unit:   { select: { unitNo: true, property: { select: { title: true } } } },
         tenant: { select: { name: true, phone: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'desc' },
     }),
     prisma.unit.findMany({
       where: { status: 'vacant' },
@@ -57,13 +63,46 @@ export default async function ContractsPage() {
                 </Td>
                 <Td muted>{new Date(c.startDate).toLocaleDateString('tr-TR')}</Td>
                 <Td muted>{c.endDate ? new Date(c.endDate).toLocaleDateString('tr-TR') : '—'}</Td>
-                <Td right><Money amount={c.rentAmount} /></Td>
+                <Td right><Money amount={c.currentRent ?? c.rentAmount} /></Td>
                 <Td right>
                   {Number(c.depositAmount) > 0
                     ? <Money amount={c.depositAmount} />
                     : <span style={{ color: 'var(--subtle)' }}>—</span>}
                 </Td>
                 <Td><Badge status={c.status} /></Td>
+                <Td>
+                  {c.status === 'active' && (
+                    <Link
+                      href={`/contracts/${c.id}`}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px', borderRadius: 6,
+                        fontSize: '0.8125rem', fontWeight: 600,
+                        background: 'var(--primary-bg)', color: 'var(--primary)',
+                        border: '1px solid var(--primary-ring)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <TrendingUp size={12} />
+                      Yenile
+                    </Link>
+                  )}
+                </Td>
+                <Td>
+                  {c.status === 'active' && (
+                    <TerminateButton
+                      contractId={c.id}
+                      label={`${c.unit.unitNo} — ${c.tenant.name}`}
+                    />
+                  )}
+                </Td>
+                <Td>
+                  <DeleteButton
+                    endpoint={`/api/contracts/${c.id}`}
+                    label={`${c.unit.unitNo} — ${c.tenant.name}`}
+                    errorAction={{ label: 'Alacaklara Git', href: '/charges' }}
+                  />
+                </Td>
               </TRow>
             ))}
           </DataTable>

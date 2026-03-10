@@ -2,6 +2,7 @@
 
 import { Users } from 'lucide-react';
 import { DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
+import { DeleteButton } from '@/components/DeleteButton';
 
 type Owner = {
   id: number;
@@ -18,6 +19,7 @@ const COLS = [
   { label: 'E-posta'   },
   { label: 'Bina',    center: true },
   { label: 'Kayıt'     },
+  { label: ''          },
 ];
 
 export default function OwnersTable({ owners }: { owners: Owner[] }) {
@@ -46,6 +48,9 @@ export default function OwnersTable({ owners }: { owners: Owner[] }) {
             </Badge>
           </Td>
           <Td muted>{new Date(o.createdAt).toLocaleDateString('tr-TR')}</Td>
+          <Td>
+            <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} errorAction={{ label: 'Binalara Git', href: '/properties' }} />
+          </Td>
         </TRow>
       ))}
     </DataTable>

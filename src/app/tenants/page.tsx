@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
+import { DeleteButton } from '@/components/DeleteButton';
 import { UserCheck } from 'lucide-react';
 import { date, initial } from '@/lib/format';
 
@@ -10,6 +11,7 @@ const COLS = [
   { label: 'E-posta'    },
   { label: 'Sözleşme', center: true },
   { label: 'Kayıt'      },
+  { label: ''           },
 ];
 
 export default async function TenantsPage() {
@@ -65,6 +67,9 @@ export default async function TenantsPage() {
                   </Badge>
                 </Td>
                 <Td muted>{date(t.createdAt)}</Td>
+                <Td>
+                  <DeleteButton endpoint={`/api/tenants/${t.id}`} label={t.name} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
+                </Td>
               </TRow>
             ))}
           </DataTable>

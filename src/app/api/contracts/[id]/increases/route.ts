@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { calcRentIncrease, getEffectiveRentAmount } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const contractId = Number(id);
+    if (isNaN(contractId)) {
+      return NextResponse.json({ error: 'Geçersiz sözleşme id' }, { status: 400 });
+    }
     const increases = await prisma.contractIncrease.findMany({
-      where:   { contractId: Number(id) },
+      where:   { contractId },
       orderBy: { effectiveDate: 'asc' },
     });
     return NextResponse.json(increases);
@@ -19,37 +24,72 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const { effectiveDate, newAmount, reason, notes } = await req.json();
+    const { effectiveDate, increaseType, ratePercent, notes } = await req.json();
 
-    if (!effectiveDate || !newAmount || !reason) {
+    // id doğrulama
+    const contractId = Number(id);
+    if (isNaN(contractId)) {
+      return NextResponse.json({ error: 'Geçersiz sözleşme id' }, { status: 400 });
+    }
+
+    // Validasyon
+    if (!effectiveDate || !increaseType) {
       return NextResponse.json(
-        { error: 'effectiveDate, newAmount, reason zorunlu' },
-        { status: 400 }
+        { error: 'effectiveDate ve increaseType zorunlu' },
+        { status: 400 },
       );
     }
 
-    // Geçerli kira miktarını bul
-    const contract = await prisma.contract.findUnique({ where: { id: Number(id) } });
+    const parsedDate = new Date(effectiveDate);
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Geçersiz tarih formatı' }, { status: 400 });
+    }
+
+    const rate = Number(ratePercent ?? 0);
+    if (isNaN(rate) || rate < 0) {
+      return NextResponse.json(
+        { error: 'ratePercent sıfır veya pozitif olmalı' },
+        { status: 400 },
+      );
+    }
+
+    if (!['monthly_tufe', 'avg12_tufe', 'manual'].includes(increaseType)) {
+      return NextResponse.json(
+        { error: 'increaseType: monthly_tufe | avg12_tufe | manual olmalı' },
+        { status: 400 },
+      );
+    }
+
+    // Sözleşme bul
+    const contract = await prisma.contract.findUnique({ where: { id: contractId } });
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
-    const lastIncrease = await prisma.contractIncrease.findFirst({
-      where:   { contractId: Number(id), effectiveDate: { lte: new Date(effectiveDate) } },
-      orderBy: { effectiveDate: 'desc' },
-    });
-    const oldAmount = lastIncrease ? Number(lastIncrease.newAmount) : Number(contract.rentAmount);
+    const oldRent = await getEffectiveRentAmount(contractId, new Date());
 
-    const increase = await prisma.contractIncrease.create({
-      data: {
-        contractId:    Number(id),
-        effectiveDate: new Date(effectiveDate),
-        oldAmount,
-        newAmount:     Number(newAmount),
-        reason,
-        notes,
-      },
-    });
+    const { newRent, increaseAmount } = calcRentIncrease(oldRent, rate);
+
+    // Transaction: artış kaydı + contract.currentRent güncelle
+    const [increase] = await prisma.$transaction([
+      prisma.contractIncrease.create({
+        data: {
+          contractId,
+          effectiveDate:  parsedDate,
+          oldAmount:      oldRent,
+          increaseAmount,
+          newAmount:      newRent,
+          increaseType,
+          ratePercent:    rate,
+          notes:          notes ?? null,
+        },
+      }),
+      prisma.contract.update({
+        where: { id: contractId },
+        data:  { currentRent: newRent },
+      }),
+    ]);
+
     return NextResponse.json(increase, { status: 201 });
   } catch (e: unknown) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }

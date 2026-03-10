@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { X } from 'lucide-react';
 
 export function Modal({
@@ -11,6 +12,8 @@ export function Modal({
   children: React.ReactNode;
   width?: number;
 }) {
+  const mouseDownOnBackdrop = useRef(false);
+
   if (!open) return null;
   return (
     <div
@@ -20,7 +23,8 @@ export function Modal({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
       }}
-      onClick={onClose}
+      onMouseDown={e => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
+      onMouseUp={e => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) onClose(); }}
     >
       <div
         style={{
@@ -30,8 +34,10 @@ export function Modal({
           border: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
           maxHeight: 'calc(100vh - 64px)',
+          overflow: 'hidden',
         }}
-        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
+        onMouseUp={e => e.stopPropagation()}
       >
         {/* Header */}
         <div style={{
@@ -67,7 +73,11 @@ export function ModalBody({ children }: { children: React.ReactNode }) {
     <div style={{
       padding: '20px 24px',
       display: 'flex', flexDirection: 'column', gap: 14,
-      overflowY: 'auto', flex: 1,
+      overflowY: 'auto', overflowX: 'hidden', flex: 1,
+      minWidth: 0,
+      wordBreak: 'break-word',
+      overflowWrap: 'anywhere',
+      whiteSpace: 'normal',
     }}>
       {children}
     </div>
@@ -79,7 +89,7 @@ export function ModalFooter({ children }: { children: React.ReactNode }) {
     <div style={{
       padding: '16px 24px',
       borderTop: '1px solid var(--border)',
-      display: 'flex', gap: 8, justifyContent: 'flex-end',
+      display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap',
       flexShrink: 0,
     }}>
       {children}

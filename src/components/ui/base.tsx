@@ -2,7 +2,7 @@ export function Card({ children, style }: { children: React.ReactNode; style?: R
   return (
     <div style={{
       background: 'var(--surface)',
-      borderRadius: 12,
+      borderRadius: 14,
       boxShadow: 'var(--shadow-card)',
       border: '1px solid var(--border)',
       overflow: 'hidden',

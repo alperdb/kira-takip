@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Users, Building2, DoorOpen,
   UserCheck, FileText, Receipt, Settings,
   PanelLeftClose, PanelLeftOpen,
+  TrendingDown, BarChart3,
 } from 'lucide-react';
 
 const NAV = [
@@ -17,6 +18,8 @@ const NAV = [
   { href: '/tenants',    label: 'Kiracılar',   icon: UserCheck       },
   { href: '/contracts',  label: 'Sözleşmeler', icon: FileText        },
   { href: '/charges',    label: 'Alacaklar',   icon: Receipt         },
+  { href: '/expenses',   label: 'Giderler',    icon: TrendingDown    },
+  { href: '/reports',    label: 'Raporlar',    icon: BarChart3       },
 ];
 
 export function Sidebar() {
@@ -45,7 +48,7 @@ export function Sidebar() {
     <aside style={{
       position: 'fixed', top: 0, left: 0, bottom: 0,
       width: w, zIndex: 50,
-      background: 'var(--bg)',
+      background: 'var(--sidebar)',
       borderRight: '1px solid var(--border)',
       display: 'flex', flexDirection: 'column',
       transition: 'width 0.25s ease',

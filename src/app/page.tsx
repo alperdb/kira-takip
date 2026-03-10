@@ -2,8 +2,13 @@ import { prisma } from '@/lib/db';
 import { PageHeader, Card } from '@/components/ui';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ChartCard, type MonthlyPoint } from '@/components/dashboard/ChartCard';
+import { BudgetSummary } from '@/components/dashboard/BudgetSummary';
+import { DonutChart } from '@/components/dashboard/DonutChart';
 import { OverdueList } from '@/components/dashboard/OverdueList';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { RateBand } from '@/components/dashboard/RateBand';
+import { UpcomingPayments } from '@/components/dashboard/UpcomingPayments';
+import { ExpiringContracts } from '@/components/dashboard/ExpiringContracts';
 import { DollarSign, BarChart3, AlertTriangle, Home } from 'lucide-react';
 
 const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
@@ -17,6 +22,7 @@ async function getData() {
     unitCount, vacantCount, occupiedCount,
     overdueCharges,
     thisMonthCharged, thisMonthPaid,
+    thisMonthExpenses,
     monthlyRaw,
   ] = await Promise.all([
     prisma.unit.count(),
@@ -25,8 +31,9 @@ async function getData() {
     prisma.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {
-        tenant: { select: { name: true } },
-        unit:   { select: { unitNo: true, property: { select: { title: true } } } },
+        tenant:   { select: { name: true } },
+        unit:     { select: { unitNo: true, property: { select: { title: true } } } },
+        contract: { select: { id: true } },
       },
       orderBy: { dueDate: 'asc' },
       take: 10,
@@ -39,6 +46,10 @@ async function getData() {
       where: { periodStart: { gte: monthStart } },
       _sum: { paidAmount: true },
     }),
+    prisma.expense.aggregate({
+      where: { date: { gte: monthStart } },
+      _sum: { amount: true },
+    }),
     prisma.rentCharge.groupBy({
       by: ['periodStart'],
       where: { periodStart: { gte: sixMonAgo } },
@@ -49,6 +60,7 @@ async function getData() {
 
   const charged     = Number(thisMonthCharged._sum.chargeAmount ?? 0);
   const paid        = Number(thisMonthPaid._sum.paidAmount ?? 0);
+  const expenses    = Number(thisMonthExpenses._sum.amount ?? 0);
   const outstanding = overdueCharges.reduce(
     (s, c) => s + Number(c.chargeAmount) - Number(c.paidAmount), 0
   );
@@ -61,7 +73,7 @@ async function getData() {
   }));
 
   return {
-    unitCount, vacantCount, charged, paid, outstanding, occupancy,
+    unitCount, vacantCount, charged, paid, expenses, outstanding, occupancy,
     overdueCharges, chartData,
   };
 }
@@ -91,6 +103,9 @@ export default async function Dashboard() {
         title="Dashboard"
         desc={`Genel bakış — ${monthName}`}
       />
+
+      {/* ── Kur Bandı ── */}
+      <RateBand />
 
       {/* ── KPI Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
@@ -125,8 +140,11 @@ export default async function Dashboard() {
         />
       </div>
 
-      {/* ── Chart + Quick Actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 296px', gap: 16, alignItems: 'start' }}>
+      {/* ── Budget Summary ── */}
+      <BudgetSummary gelir={d.paid} gider={d.expenses} />
+
+      {/* ── Chart + Donut + Quick Actions ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px 360px', gap: 16, alignItems: 'stretch' }}>
         <Card>
           <div style={{
             padding: '20px 24px 0',
@@ -148,11 +166,45 @@ export default async function Dashboard() {
           </div>
         </Card>
 
-        <QuickActions />
+        {/* Donut chart */}
+        <Card>
+          <div style={{ padding: '20px 20px 0' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.9375rem', margin: '0 0 2px', color: 'var(--text)' }}>
+              {d.expenses > 0 ? 'Gelir & Gider' : 'Tahsilat vs Bekleyen'}
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>Bu ay</p>
+          </div>
+          <div style={{ height: 260, padding: '16px 16px 20px' }}>
+            <DonutChart gelir={d.paid} gider={d.expenses} outstanding={d.outstanding} />
+          </div>
+          {/* Legend */}
+          <div style={{
+            display: 'flex', gap: 14, padding: '0 20px 18px',
+            justifyContent: 'center',
+          }}>
+            {d.expenses > 0 ? (
+              <>
+                <ChartLegend color="var(--primary)" label="Gelir" />
+                <ChartLegend color="var(--red)"     label="Gider" />
+              </>
+            ) : (
+              <>
+                <ChartLegend color="var(--green)"   label="Tahsilat" />
+                <ChartLegend color="var(--amber)"   label="Bekleyen" />
+              </>
+            )}
+          </div>
+        </Card>
+
+        <QuickActions charged={d.charged} paid={d.paid} />
       </div>
 
-      {/* ── Overdue list ── */}
-      <OverdueList charges={d.overdueCharges} />
+      {/* ── Bottom widgets ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'start' }}>
+        <OverdueList charges={d.overdueCharges} />
+        <UpcomingPayments />
+        <ExpiringContracts />
+      </div>
     </>
   );
 }

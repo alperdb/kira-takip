@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Settings, LogOut, User, ChevronDown, Moon, Sun } from 'lucide-react';
 
@@ -12,6 +12,8 @@ const LABELS: Record<string, string> = {
   '/tenants':    'Kiracılar',
   '/contracts':  'Sözleşmeler',
   '/charges':    'Alacaklar',
+  '/expenses':   'Giderler',
+  '/reports':    'Raporlar',
   '/settings':   'Ayarlar',
 };
 
@@ -48,9 +50,11 @@ function UserDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { dark, toggle: toggleTheme } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
+      if (e.button !== 0) return;
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener('mousedown', onDown);
@@ -105,15 +109,15 @@ function UserDropdown() {
 
           {/* Menu items */}
           <div style={{ padding: 6 }}>
-            <DropdownItem icon={User}               label="Profil"  />
-            <DropdownItem icon={Settings}           label="Ayarlar" />
+            <DropdownItem icon={User}     label="Profil"  onClick={() => { setOpen(false); router.push('/settings'); }} />
+            <DropdownItem icon={Settings} label="Ayarlar" onClick={() => { setOpen(false); router.push('/settings'); }} />
             <DropdownItem
               icon={dark ? Sun : Moon}
               label={dark ? 'Açık Tema' : 'Koyu Tema'}
               onClick={toggleTheme}
             />
             <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-            <DropdownItem icon={LogOut}             label="Çıkış"   danger />
+            <DropdownItem icon={LogOut} label="Çıkış" danger onClick={() => { setOpen(false); window.location.href = '/'; }} />
           </div>
         </div>
       )}

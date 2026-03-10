@@ -1,0 +1,73 @@
+KİRA SÖZLEŞMESİ
+
+Madde 1
+TARAFLAR
+
+A - KİRALAYAN
+MAL SAHİBİ : {{landlordName}}
+TC: {{landlordTC}}
+Adresi : {{landlordAddress}}
+TEL: {{landlordPhone}}
+
+B - KİRACI
+Adı Soyadı : {{tenantName}}
+TC: {{tenantTC}}
+İşyeri Ünvanı : {{tenantCompany}} {{tenantWorkAddress}}
+Adresi : {{tenantAddress}}
+İş Telefonu : {{tenantWorkPhone}}
+Ev Adresi : {{tenantHomeAddress}}
+
+Taraflar işbu sözleşme hükümleri uyarınca kiracı ve kiralayan ilişkisini sürdürecek olup, mali hükümler özel şartlar bölümünde tanzim ve izah olunacaktır. İşbu kira akdinin aşağıdaki hükümlerinde; (A) bendinde yazılı taraftan yani {{landlordName}} "Kiralayan", (B) bendinde yazılı taraftan yani {{tenantName}} "Kiracı" olarak bahis olunacaktır.
+
+Madde 2
+KONU
+
+Kiralayan ile Kiracı aşağıda belirtilen şartlarla {{propertyAddress}} adresinde mukim taşınmazın kiralanması ve buna ilişkin hükümlerin Borçlar Kanunu, TTK., MK. ve İ.İ.K.nunda tanımını bulan düzenlemelere ek olarak özel koşulların tespit ve izahatı ile karşılıklı olarak kabulünden ibarettir.
+
+Madde 3
+KİRA SÖZLEŞMESİ SÜRESİ
+
+İşbu kira sözleşmesinin bitim tarihi {{contractEndDate}} Sürenin bitiminden asgari 60 gün evvel, taraflardan birisinin işbu sözleşmenin müddetinin hitamında münfesih olacağına dair noterlikçe ihbarda bulunmamaları halinde aşağıdaki şartlarla mukavele kendiliğinden bir yıl süre ile yenilenmiş sayılır. Kira sözleşmesinin sonlanması için 60 gün evvel ihtarda bulunması gerekmektedir.
+
+Madde 4
+KİRA BAŞLANGICI
+
+İşbu kira sözleşmesinin başlangıcı {{contractStartDate}} tarihidir.
+
+Madde 5
+KİRA BEDELİ
+
+Bu sözleşme ile kiracı, kiralayana {{rentIncreaseDate}} tarihine kadar net {{rentAmount}} aylık kira bedelini ait olduğu ayın {{paymentDay}}.ci günü saat 16.00 ya kadar nakden ve peşinen ödeyecektir. Anılan kira bedeli aylık net kirayı ifade eder.
+
+Kira artışları her yıl {{rentIncreaseDate}} tarihinde olacak olup, her türlü hukuki hak ve tasarrufta bu tarih nazara alınacak olup, kira akdinin devamı halinde kira bedeli artışı Tüfe oranlarına göre yapılacaktır.
+
+Kiracı kira bedellerini kiralayanın göstereceği banka hesabına yatırılacaktır. {{bankName}} {{iban}} HESABI ADINA YATIRILACAKTIR. DEPOZİTO: {{depositAmount}}
+
+Madde 6
+KİRALAMA ÖZEL ŞARTLARI
+
+1- Taşınmazın genel giderleri ile su, elektrik giderleri, aidat kiracıya; sabit giderler ise kiralayana aittir.
+
+2- Kiracı kiralanan yerin bir bölümünü veya tamamını ve buradaki evini, kiralayanın yazılı muvafakatı bulunmadan başkalarının kullanımına geçici dahi olsa tahsis edemez, devir edemez, kiraya veremez, ortak alamaz ve yararlandıramaz. Taşınmaz kiracının kendisinin KONUT ihtiyacı için kiralanmış olup, kullanım amacı kiralayanın yazılı muvafakatı bulunmadan değiştirilemez. Bu hükmün aksine davranışlar akde aykırılık teşkil edeceğinden tahliye nedeni olacaktır.
+
+3- Kiracı, kiralanan taşınmazda kiralayanın yazılı onayı bulunmadan tadilat ve onarım yapamaz. Kiracı konutu akde aykırı kullanırsa böyle bir durum olması halinde MAL SAHİBİ akdi tek taraflı olarak fesih edebilir.
+
+4- Taşınmazın hangi neden ile olursa olsun tahliyesi halinde kiracı taşınmazın tüm bakım ve onarımı ile temizliğini yaparak kiralayana teslim edecektir. Bu koşulun yerine getirilmemesi halinde kiracı tüm masrafları kiralayanın ilk talebinde teslim tarihinden itibaren uygulanacak en yüksek banka reeskont faizi ile birlikte ödemeyi kabul ve taahhüt eder.
+
+5- Kiracı bu sözleşme ile ilgili olarak, kira bedelinin ya da sözleşme koşullarının uyarlanması davası açmak hakkından feragat ettiğini kabul ve beyan eder.
+
+6- Taraflar her türlü yazışma ve tebligat adresi olarak işbu sözleşmedeki adreslerini kabul ederler. Kiracı işbu sözleşmedeki adresinde bulunamadığı zaman, akde konu yerde çalışan işçiye yapılan bildirimler bizzat kiracıya aynı gün yapılmış gibi sonuç doğurur.
+
+7- Bir aylık kira bedelinin gününde ödenmemesi halinde sözleşme sonuna kadar işleyecek tüm aylar kira bedelleri hiçbir ihtar ve ihbara gerek kalmaksızın muacceliyet kespeder. Kiracının işbu bedelleri ödemedeki temerrüdü tahliyeye esas teşkil eder.
+
+8- Sözleşmenin uygulanmasından doğacak her türlü ihtilafın çözümünde {{courtCity}} Mahkemeleri ve {{courtCity}} İcra Daireleri yetkilidir.
+
+9- Kiralanan mecura kiracının yapacağı ya da yaptığı masraflar her ne nam altında olursa olsun kiralayandan talep olunmayacaktır. Mecur tüm üniteleri eksiksiz olarak kiracıya teslim edilmiştir.
+
+10- KONUT için yapılacak zaruri ve faydalı masraflar kiralayana aittir. Aidatlar site yönetimine ödenecektir.
+
+Madde 7
+
+İşbu kira sözleşmesi 7 ana maddeden ibaret olup, iki nüsha olarak tanzim edilmiş ve huzurda taraflarca okunup imzalanarak bir sureti kiracıya ve bir sureti de kiralayana teslim edilmiştir.
+
+KİRACI                                          KİRALAYAN

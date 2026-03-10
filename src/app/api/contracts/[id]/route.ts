@@ -49,3 +49,35 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });
   }
 }
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const contract = await prisma.contract.findUnique({
+      where: { id: Number(id) },
+      include: { _count: { select: { rentCharges: true } } },
+    });
+    if (!contract) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+    if (contract.status === 'active') {
+      return NextResponse.json(
+        { error: 'Aktif sözleşmeler silinemez. Önce sözleşmeyi sonlandırın.' },
+        { status: 409 },
+      );
+    }
+    if (contract._count.rentCharges > 0) {
+      return NextResponse.json(
+        { error: `Bu sözleşmeye ait ${contract._count.rentCharges} alacak kaydı var. Silmek için önce alacakları kaldırın.` },
+        { status: 409 },
+      );
+    }
+    // İlişkili kayıtları cascade sil
+    await prisma.$transaction([
+      prisma.contractIncrease.deleteMany({ where: { contractId: Number(id) } }),
+      prisma.depositTransaction.deleteMany({ where: { contractId: Number(id) } }),
+      prisma.contract.delete({ where: { id: Number(id) } }),
+    ]);
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+}

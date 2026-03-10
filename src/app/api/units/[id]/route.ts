@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       include: {
         property: { select: { id: true, title: true, owner: { select: { id: true, name: true } } } },
         contracts: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { startDate: 'desc' },
           include: { tenant: { select: { id: true, name: true, phone: true } } },
         },
       },
@@ -45,6 +45,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const unit = await prisma.unit.findUnique({
+      where: { id: Number(id) },
+      include: { _count: { select: { contracts: true } } },
+    });
+    if (!unit) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+    if (unit._count.contracts > 0) {
+      return NextResponse.json(
+        { error: `Bu daireye ait ${unit._count.contracts} sözleşme var. Silmek için önce sözleşmeleri kaldırın.` },
+        { status: 409 },
+      );
+    }
     await prisma.unit.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, Money, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
+import { DeleteButton } from '@/components/DeleteButton';
 import { DoorOpen } from 'lucide-react';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -16,6 +17,7 @@ const COLS = [
   { label: 'Durum'     },
   { label: 'Kiracı'    },
   { label: 'Kira', right: true },
+  { label: ''          },
 ];
 
 export default async function UnitsPage() {
@@ -77,6 +79,9 @@ export default async function UnitsPage() {
                     {contract
                       ? <Money amount={contract.rentAmount} />
                       : <span style={{ color: 'var(--subtle)' }}>—</span>}
+                  </Td>
+                  <Td>
+                    <DeleteButton endpoint={`/api/units/${u.id}`} label={`${u.property.title} — ${u.unitNo}`} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
                   </Td>
                 </TRow>
               );

@@ -1,14 +1,73 @@
-const { app, BrowserWindow, shell } = require('electron');
-const { spawn }                      = require('child_process');
-const path                           = require('path');
-const http                           = require('http');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { spawn }  = require('child_process');
+const path       = require('path');
+const http       = require('http');
+const fs         = require('fs');
 
 const PORT    = 3001;
 const DEV_URL = `http://localhost:${PORT}`;
 let   nextProcess = null;
 let   win         = null;
 
-// ── Wait until Next.js server is ready ──────────────────
+// ── SQLite DB path ─────────────────────────────────────────
+function getDbPath() {
+  return path.join(app.getPath('userData'), 'kira-takip', 'kira.db');
+}
+
+// ── Init schema using Prisma binary engine (no ABI issues) ─
+async function initDatabase(dbPath) {
+  if (fs.existsSync(dbPath)) return;   // DB already exists — skip
+
+  const dir = path.dirname(dbPath);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const isDev = !app.isPackaged;
+
+  // Resolve @prisma/client and its query engine binary.
+  // In packaged app, we load from the standalone's node_modules.
+  const clientDir = isDev
+    ? path.join(__dirname, '..', 'node_modules', '@prisma', 'client')
+    : path.join(__dirname, '..', '.next', 'standalone', 'node_modules', '@prisma', 'client');
+
+  const enginesDir = isDev
+    ? path.join(__dirname, '..', 'node_modules', '@prisma', 'engines')
+    : path.join(__dirname, '..', '.next', 'standalone', 'node_modules', '@prisma', 'engines');
+
+  // Find the query-engine binary (e.g. query-engine-windows.exe)
+  if (fs.existsSync(enginesDir)) {
+    const bin = fs.readdirSync(enginesDir).find(f =>
+      f.startsWith('query-engine') &&
+      (process.platform === 'win32' ? f.endsWith('.exe') : !f.includes('.'))
+    );
+    if (bin) process.env.PRISMA_QUERY_ENGINE_BINARY = path.join(enginesDir, bin);
+  }
+
+  process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, '/')}`;
+
+  // Use Prisma to run raw CREATE TABLE statements
+  const { PrismaClient } = require(clientDir);
+  const prisma = new PrismaClient();
+
+  const schemaSQL = fs.readFileSync(path.join(__dirname, 'sqlite-schema.sql'), 'utf8');
+  const statements = schemaSQL
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => s.length > 4 && !s.startsWith('--'));
+
+  await prisma.$connect();
+  for (const stmt of statements) {
+    if (stmt.toUpperCase().startsWith('PRAGMA')) {
+      await prisma.$queryRawUnsafe(stmt);   // PRAGMAs return results
+    } else {
+      await prisma.$executeRawUnsafe(stmt); // DDL statements
+    }
+  }
+  await prisma.$disconnect();
+
+  console.log('DB initialized:', dbPath);
+}
+
+// ── Wait until Next.js server is ready ────────────────────
 function waitForServer(url, retries = 30) {
   return new Promise((resolve, reject) => {
     let tries = 0;
@@ -26,7 +85,7 @@ function waitForServer(url, retries = 30) {
   });
 }
 
-// ── Create Electron window ───────────────────────────────
+// ── Create Electron window ─────────────────────────────────
 function createWindow() {
   win = new BrowserWindow({
     width:    1400,
@@ -34,51 +93,58 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title:    'Kira Takip',
-    // icon: path.join(__dirname, 'icon.png'),  // add icon.png here
     webPreferences: {
       contextIsolation: true,
       nodeIntegration:  false,
+      preload: path.join(__dirname, 'preload.js'),
     },
     backgroundColor: '#F8FAFC',
-    show: false,   // show after ready-to-show
+    show: false,
   });
 
   win.loadURL(DEV_URL);
-
-  // Show when fully rendered (no white flash)
   win.once('ready-to-show', () => win.show());
 
-  // Open external links in the system browser
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // Remove default menu bar
   win.setMenuBarVisibility(false);
-
   win.on('closed', () => { win = null; });
 }
 
-// ── App lifecycle ────────────────────────────────────────
+// ── IPC: relaunch (Settings → Reset Data) ─────────────────
+ipcMain.handle('relaunch', () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+// ── App lifecycle ──────────────────────────────────────────
 app.whenReady().then(async () => {
-  const isDev = !app.isPackaged;
+  const isDev  = !app.isPackaged;
+  const dbPath = getDbPath();
+
+  await initDatabase(dbPath);
+
+  const dbUrl = `file:${dbPath.replace(/\\/g, '/')}`;
 
   if (isDev) {
-    // In dev: Next.js is already running on port 3001 (npm run dev)
-    // Just open the window — don't start another server
+    process.env.DATABASE_URL = dbUrl;
     await waitForServer(DEV_URL).catch(() => {
-      console.error('⚠️  Start Next.js first: npm run dev');
+      console.error('Start Next.js first: npm run dev');
     });
     createWindow();
   } else {
-    // In production: spawn the bundled standalone Next.js server
-    // electron/main.js is at resources/app/electron/main.js
-    // standalone server is at resources/app/.next/standalone/server.js
     const serverScript = path.join(__dirname, '..', '.next', 'standalone', 'server.js');
     nextProcess = spawn(process.execPath, [serverScript], {
-      env: { ...process.env, PORT: String(PORT), NODE_ENV: 'production',
-             HOSTNAME: '127.0.0.1' },
+      env: {
+        ...process.env,
+        PORT: String(PORT),
+        NODE_ENV: 'production',
+        HOSTNAME: '127.0.0.1',
+        DATABASE_URL: dbUrl,
+      },
       stdio: 'inherit',
     });
     await waitForServer(DEV_URL);

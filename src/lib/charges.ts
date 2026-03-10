@@ -1,4 +1,8 @@
 import { prisma } from './db';
+import { getRate } from './tcmb';
+
+// ─── Kira artış hesabı (pure — ayrı dosyada, buradan re-export) ─
+export { calcRentIncrease } from './rentCalc';
 
 // ─── Geçerli kira miktarı (son artış veya başlangıç) ─────────
 export async function getEffectiveRentAmount(contractId: number, asOfDate: Date): Promise<number> {
@@ -59,16 +63,34 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
       ? prorateAmount(chargeAmount, contract.startDate, periodStart)
       : chargeAmount;
 
+    // ── Dövizli sözleşmeler için TCMB kuru ──────────────────
+    let exchangeRate:    number | undefined;
+    let chargeAmountTry: number | undefined;
+
+    if (contract.currency !== 'TRY') {
+      const rate = await getRate(contract.currency);
+      if (rate === null) {
+        throw new Error(
+          `${contract.currency} için TCMB kur verisi alınamadı — ` +
+          `alacak oluşturulamadı (contract: ${contract.id})`,
+        );
+      }
+      exchangeRate    = rate;
+      chargeAmountTry = Math.round(finalAmount * rate * 100) / 100;
+    }
+
     await prisma.rentCharge.create({
       data: {
-        contractId:   contract.id,
-        unitId:       contract.unitId,
-        tenantId:     contract.tenantId,
+        contractId:      contract.id,
+        unitId:          contract.unitId,
+        tenantId:        contract.tenantId,
         dueDate,
-        chargeAmount: finalAmount,
+        chargeAmount:    finalAmount,
         periodStart,
         periodEnd,
-        status:       'pending',
+        status:          'pending',
+        exchangeRate,
+        chargeAmountTry,
       },
     });
     created++;
