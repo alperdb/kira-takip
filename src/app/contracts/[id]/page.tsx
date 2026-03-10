@@ -7,6 +7,7 @@ import { RentIncreaseForm } from './RentIncreaseForm';
 import { ContractRenewForm } from './ContractRenewForm';
 import { getEffectiveRentAmount } from '@/lib/charges';
 import { ContractQuickActions } from './ContractQuickActions';
+import { PaymentHistoryCard } from '@/components/PaymentHistoryCard';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 
 type Params = { params: Promise<{ id: string }> };
@@ -54,7 +55,7 @@ export default async function ContractDetailPage({ params }: Params) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, alignItems: 'start' }}>
 
-        {/* Sol: Artış formu + Yenileme formu */}
+        {/* Sol: Artış formu + Yenileme formu + Ödeme geçmişi */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <RentIncreaseForm
             contractId={contract.id}
@@ -65,6 +66,7 @@ export default async function ContractDetailPage({ params }: Params) {
             currentRent={effectiveRent}
             currentEndDate={contract.endDate?.toISOString().split('T')[0]}
           />
+          <PaymentHistoryCard endpoint={`/api/contracts/${contract.id}/payment-history`} />
         </div>
 
         {/* Sağ: Quick actions + özet + geçmiş */}

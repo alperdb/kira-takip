@@ -4,6 +4,7 @@ import AddForm from '@/components/AddForm';
 import { DeleteButton } from '@/components/DeleteButton';
 import { UserCheck } from 'lucide-react';
 import { date, initial } from '@/lib/format';
+import Link from 'next/link';
 
 const COLS = [
   { label: 'Ad Soyad'   },
@@ -46,18 +47,19 @@ export default async function TenantsPage() {
             {tenants.map(t => (
               <TRow key={t.id}>
                 <Td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {/* Avatar */}
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                      background: 'var(--primary-bg)', color: 'var(--primary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.8125rem', fontWeight: 700,
-                    }}>
-                      {initial(t.name)}
+                  <Link href={`/tenants/${t.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                        background: 'var(--primary-bg)', color: 'var(--primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.8125rem', fontWeight: 700,
+                      }}>
+                        {initial(t.name)}
+                      </div>
+                      <span style={{ fontWeight: 600 }}>{t.name}</span>
                     </div>
-                    <span style={{ fontWeight: 600 }}>{t.name}</span>
-                  </div>
+                  </Link>
                 </Td>
                 <Td muted>{t.phone ?? '—'}</Td>
                 <Td muted>{t.email ?? '—'}</Td>
