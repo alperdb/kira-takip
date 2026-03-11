@@ -26,6 +26,8 @@ export function Sidebar() {
   const pathname   = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  if (pathname === '/login') return null;
+
   // Restore from localStorage after hydration
   useEffect(() => {
     try {

@@ -142,6 +142,22 @@ CREATE TABLE IF NOT EXISTS "expenses" (
   FOREIGN KEY ("property_id") REFERENCES "properties"("id")
 );
 
+CREATE TABLE IF NOT EXISTS "users" (
+  "id"            INTEGER PRIMARY KEY AUTOINCREMENT,
+  "username"      TEXT    NOT NULL UNIQUE,
+  "password_hash" TEXT    NOT NULL,
+  "role"          TEXT    NOT NULL DEFAULT 'admin',
+  "created_at"    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "sessions" (
+  "id"         TEXT    PRIMARY KEY,
+  "user_id"    INTEGER NOT NULL,
+  "expires_at" DATETIME NOT NULL,
+  "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY ("user_id") REFERENCES "users"("id")
+);
+
 CREATE TABLE IF NOT EXISTS "exchange_rates" (
   "id"           INTEGER PRIMARY KEY AUTOINCREMENT,
   "date"         DATETIME NOT NULL,

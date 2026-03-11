@@ -47,10 +47,18 @@ function useTheme() {
 
 // ── User dropdown ──────────────────────────────────────
 function UserDropdown() {
-  const [open, setOpen] = useState(false);
+  const [open,     setOpen]     = useState(false);
+  const [username, setUsername] = useState('admin');
   const ref = useRef<HTMLDivElement>(null);
   const { dark, toggle: toggleTheme } = useTheme();
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.username) setUsername(d.username); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -103,8 +111,8 @@ function UserDropdown() {
         }}>
           {/* User info */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Admin</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 1 }}>admin@kira.app</div>
+            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>{username}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 1 }}>Yönetici</div>
           </div>
 
           {/* Menu items */}
@@ -117,7 +125,16 @@ function UserDropdown() {
               onClick={toggleTheme}
             />
             <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-            <DropdownItem icon={LogOut} label="Çıkış" danger onClick={() => { setOpen(false); window.location.href = '/'; }} />
+            <DropdownItem
+              icon={LogOut}
+              label="Çıkış"
+              danger
+              onClick={async () => {
+                setOpen(false);
+                await fetch('/api/auth/logout', { method: 'POST' });
+                router.push('/login');
+              }}
+            />
           </div>
         </div>
       )}
@@ -157,6 +174,8 @@ export function Topbar() {
   const pathname = usePathname();
   const label    = matchLabel(pathname);
   const isRoot   = pathname === '/';
+
+  if (pathname === '/login') return null;
 
   return (
     <header style={{

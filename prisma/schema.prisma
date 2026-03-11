@@ -198,6 +198,31 @@ model Expense {
   @@map("expenses")
 }
 
+// ─── 12. USERS ───────────────────────────────────────────────
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  role         String    @default("admin")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  sessions Session[]
+
+  @@map("users")
+}
+
+// ─── 13. SESSIONS ────────────────────────────────────────────
+model Session {
+  id        String   @id
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
+}
+
 // ─── 11. EXCHANGE_RATES ──────────────────────────────────────
 model ExchangeRate {
   id          Int      @id @default(autoincrement())
