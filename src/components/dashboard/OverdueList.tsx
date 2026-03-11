@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { PaymentModal } from '@/components/PaymentModal';
 
 type Charge = {
   id: number;
@@ -15,6 +18,9 @@ type Charge = {
 };
 
 export function OverdueList({ charges }: { charges: Charge[] }) {
+  const router = useRouter();
+  const [payModal, setPayModal] = useState<{ chargeId: number; remaining: number; label: string } | null>(null);
+
   return (
     <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 380, overflow: 'hidden' }}>
       {/* Header */}
@@ -60,33 +66,35 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto', maxHeight: 280 }}>
           {charges.map(c => {
-            const remaining = Number(c.chargeAmount) - Number(c.paidAmount);
-            const overdueDays = Math.floor(
-              (Date.now() - new Date(c.dueDate).getTime()) / 86_400_000
-            );
-            const href = c.contract?.id ? `/contracts/${c.contract.id}` : '/charges';
+            const remaining  = Number(c.chargeAmount) - Number(c.paidAmount);
+            const overdueDays = Math.floor((Date.now() - new Date(c.dueDate).getTime()) / 86_400_000);
+            const href       = c.contract?.id ? `/contracts/${c.contract.id}` : '/charges';
+            const label      = `${c.tenant.name} — ${c.unit.property.title} · ${c.unit.unitNo}`;
+
             return (
-              <Link key={c.id} href={href} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '9px 11px', borderRadius: 8, cursor: 'pointer',
-                  background: 'var(--red-bg)',
-                  border: '1px solid rgba(239,68,68,0.15)',
-                  transition: 'border-color 0.12s',
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: '0.8125rem', margin: '0 0 1px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.tenant.name}
-                    </p>
-                    <p style={{ fontSize: '0.6875rem', color: 'var(--muted)', margin: 0 }}>
-                      {c.unit.property.title} · {c.unit.unitNo}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 10 }}>
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '9px 11px', borderRadius: 8,
+                background: 'var(--red-bg)',
+                border: '1px solid rgba(239,68,68,0.15)',
+                gap: 8,
+              }}>
+                {/* Info — clickable link */}
+                <Link href={href} style={{ textDecoration: 'none', flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.8125rem', margin: '0 0 1px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {c.tenant.name}
+                  </p>
+                  <p style={{ fontSize: '0.6875rem', color: 'var(--muted)', margin: 0 }}>
+                    {c.unit.property.title} · {c.unit.unitNo}
+                  </p>
+                </Link>
+
+                {/* Amount + pay button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div style={{ textAlign: 'right' }}>
                     <p style={{
                       fontSize: '0.8125rem', fontWeight: 700, margin: '0 0 1px',
-                      color: 'var(--red)',
-                      fontFamily: 'ui-monospace, monospace',
+                      color: 'var(--red)', fontFamily: 'ui-monospace, monospace',
                     }}>
                       ₺{remaining.toLocaleString('tr-TR')}
                     </p>
@@ -94,11 +102,35 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
                       {overdueDays}g gecikmiş
                     </p>
                   </div>
+
+                  <button
+                    onClick={() => setPayModal({ chargeId: c.id, remaining, label })}
+                    style={{
+                      padding: '4px 8px', borderRadius: 6,
+                      fontSize: '0.75rem', fontWeight: 600,
+                      background: 'var(--primary-bg)', color: 'var(--primary)',
+                      border: '1px solid var(--primary-ring)', cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Öde
+                  </button>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
+      )}
+
+      {payModal && (
+        <PaymentModal
+          open={!!payModal}
+          onClose={() => setPayModal(null)}
+          onSuccess={() => { setPayModal(null); router.refresh(); }}
+          endpoint={`/api/charges/${payModal.chargeId}/payments`}
+          remaining={payModal.remaining}
+          label={payModal.label}
+        />
       )}
     </Card>
   );

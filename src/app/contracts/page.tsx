@@ -2,11 +2,11 @@ import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, EmptyState, Badge, Money } from '@/components/ui';
 import { ContractModal } from './ContractModal';
 import { ContractEditModal } from './ContractEditModal';
+import { ContractRenewModal } from './ContractRenewModal';
 import { ContractPdfButton } from './ContractPdfButton';
 import { DeleteButton } from '@/components/DeleteButton';
 import { TerminateButton } from '@/components/TerminateButton';
-import { FileText, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
+import { FileText } from 'lucide-react';
 
 const COLS = [
   { label: 'Daire'    },
@@ -80,20 +80,12 @@ export default async function ContractsPage() {
                 <Td><Badge status={c.status} /></Td>
                 <Td>
                   {c.status === 'active' && (
-                    <Link
-                      href={`/contracts/${c.id}`}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px', borderRadius: 6,
-                        fontSize: '0.8125rem', fontWeight: 600,
-                        background: 'var(--primary-bg)', color: 'var(--primary)',
-                        border: '1px solid var(--primary-ring)',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      <TrendingUp size={12} />
-                      Yenile
-                    </Link>
+                    <ContractRenewModal
+                      contractId={c.id}
+                      currentRent={Number(c.currentRent ?? c.rentAmount)}
+                      currentEndDate={c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null}
+                      label={`${c.unit.unitNo} — ${c.tenant.name}`}
+                    />
                   )}
                 </Td>
                 <Td>

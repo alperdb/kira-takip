@@ -200,7 +200,7 @@ export default async function Dashboard() {
       </div>
 
       {/* ── Bottom widgets ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'stretch' }}>
         <OverdueList charges={d.overdueCharges} />
         <UpcomingPayments />
         <ExpiringContracts />

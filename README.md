@@ -25,10 +25,12 @@ The application follows a structured data model: owners hold properties, propert
 - **Payment History** — Per-tenant and per-contract payment history with running balance-after calculations.
 - **Dashboard Analytics** — Monthly KPI cards for total receivables, collections, overdue amounts, and occupancy rate. Six-month revenue chart and budget summary.
 - **Upcoming Payments Widget** — Contracts with payments due in the next 14 days, color-coded by urgency.
-- **Overdue Monitoring** — Real-time list of overdue charges with tenant, unit, and days-overdue information.
+- **Overdue Monitoring** — Real-time list of overdue charges with tenant, unit, days-overdue information, and direct one-click payment recording from the dashboard.
 - **Expiring Contracts Widget** — Tracks contracts expiring within 30, 60, or 90 days.
 - **Expense Tracking** — Record property-level expenses by category. Monthly totals feed into net income calculations.
 - **Financial Reports** — Monthly breakdown of receivables, collections, expenses, and net income with CSV export.
+- **CSV Export Suite** — Seven export types: monthly summary, contracts, payments, tenant payment history, property income report, receivables aging analysis, and raw receivables.
+- **Contract Renewal** — Renew active contracts directly from the contracts list. Pre-filled modal copies previous terms; updating dates and rent creates a new contract while closing the old one.
 - **TCMB Exchange Rates** — Live Turkish Central Bank rates for foreign-currency contracts.
 - **Rent Increase Management** — Apply CPI-indexed or manual rent increases with full audit history per contract.
 - **Dark Mode** — System-aware theme with manual toggle.
@@ -296,10 +298,11 @@ ExchangeRate (TCMB daily snapshot)
 Implemented and functional:
 - Full CRUD for the Owner → Property → Unit → Tenant → Contract hierarchy
 - Monthly charge generation and FIFO payment recording
-- Contract PDF generation and download
+- Contract PDF generation and download (Turkish-law compliant template)
+- Contract editing and renewal from the contracts list page
 - Payment history per tenant and per contract
-- Dashboard KPIs, charts, and monitoring widgets
-- Expense tracking and financial reports with CSV export
+- Dashboard KPIs, charts, and monitoring widgets with overdue quick-pay
+- Expense tracking and financial reports with 7-type CSV export suite
 
 Not yet implemented: authentication, scheduled jobs, email notifications.
 

@@ -111,6 +111,24 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
       disabled: false,
     },
     {
+      label: 'Kiracı Ödeme Geçmişi',
+      desc:  'Kiracı bazlı alacak ve ödeme detayları',
+      onClick: () => downloadFromApi('/api/export/tenant-payments'),
+      disabled: false,
+    },
+    {
+      label: 'Mülk Gelir Raporu',
+      desc:  'Mülk bazlı tahsilat ve doluluk özeti',
+      onClick: () => downloadFromApi('/api/export/property-income'),
+      disabled: false,
+    },
+    {
+      label: 'Alacak Yaşlandırma',
+      desc:  'Vadesi geçmiş alacakların yaş analizi',
+      onClick: () => downloadFromApi('/api/export/receivables-aging'),
+      disabled: false,
+    },
+    {
       label: 'Alacaklar',
       desc:  'Tüm kira alacakları',
       onClick: () => downloadFromApi('/api/export/receivables'),
