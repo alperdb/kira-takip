@@ -310,7 +310,14 @@ Not yet implemented: authentication, scheduled jobs, email notifications.
 
 ## License
 
-This project does not yet have a public license. A license will be specified before the first stable release.
+Copyright (c) 2026 alperdb. All rights reserved.
+
+This project is **source available** but not open source.
+
+- You may view and read the source code for personal or evaluation purposes.
+- Commercial use, redistribution, resale, and distribution of modifications are **not permitted** without prior written permission from the copyright holder.
+
+See the [LICENSE](./LICENSE) file for the full terms.
 
 ---
 
