@@ -34,16 +34,39 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const { endDate, paymentDay, notes } = await req.json();
-    // Kira miktarı değişikliği → /increases endpoint'i kullan
+    const contractId = Number(id);
+    const body = await req.json();
+    const { endDate, paymentDay, startDate, rentAmount, tenantId, unitId } = body;
+
+    if (paymentDay !== undefined && (Number(paymentDay) < 1 || Number(paymentDay) > 28)) {
+      return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
+    }
+    if (startDate && endDate && endDate <= startDate) {
+      return NextResponse.json({ error: 'Bitiş tarihi başlangıçtan sonra olmalı' }, { status: 400 });
+    }
+
+    // If unit is changing, update unit statuses
+    if (unitId !== undefined) {
+      const current = await prisma.contract.findUnique({ where: { id: contractId }, select: { unitId: true } });
+      if (current && current.unitId !== Number(unitId)) {
+        await prisma.$transaction([
+          prisma.unit.update({ where: { id: current.unitId }, data: { status: 'vacant' } }),
+          prisma.unit.update({ where: { id: Number(unitId) }, data: { status: 'occupied' } }),
+        ]);
+      }
+    }
+
     const contract = await prisma.contract.update({
-      where: { id: Number(id) },
+      where: { id: contractId },
       data: {
-        endDate:    endDate    ? new Date(endDate) : undefined,
-        paymentDay: paymentDay ? Number(paymentDay) : undefined,
+        ...(startDate   !== undefined && { startDate:   new Date(startDate) }),
+        ...(endDate     !== undefined && { endDate:     endDate ? new Date(endDate) : null }),
+        ...(paymentDay  !== undefined && { paymentDay:  Number(paymentDay) }),
+        ...(rentAmount  !== undefined && { rentAmount:  Number(rentAmount) }),
+        ...(tenantId    !== undefined && { tenantId:    Number(tenantId) }),
+        ...(unitId      !== undefined && { unitId:      Number(unitId) }),
       },
     });
-    void notes; // notes şu an contract'ta yok, ileride eklenebilir
     return NextResponse.json(contract);
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });

@@ -53,7 +53,7 @@ export function UpcomingPayments() {
   }, []);
 
   return (
-    <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 380, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{
@@ -97,7 +97,7 @@ export function UpcomingPayments() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto', maxHeight: 280 }}>
           {items.map(item => (
             <Link
               key={item.contractId}

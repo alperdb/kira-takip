@@ -118,14 +118,64 @@ DATABASE_URL="postgresql://user:password@host:5432/kira_takip"
 
 ### Desktop Build (Electron)
 
-```bash
-# Development — run both commands in separate terminals
-npm run dev            # Terminal 1: Next.js dev server
-npm run electron:dev   # Terminal 2: Electron shell
+Kira Takip ships as a self-contained Windows desktop application built with Electron. The packaged `.exe` embeds the Next.js server, Prisma, and SQLite — no external dependencies required.
 
-# Production — generates platform installer in dist/
+#### Development mode
+
+Run both commands in separate terminals:
+
+```bash
+npm run dev            # Terminal 1: Next.js dev server (port 3001)
+npm run electron:dev   # Terminal 2: Electron shell (connects to dev server)
+```
+
+#### Production build — Windows portable `.exe`
+
+Prerequisites: Node.js 18+, npm 9+.
+
+```bash
+# 1. Build Next.js in standalone mode
+npm run build
+
+# 2. Copy static assets into the standalone bundle
+node electron/copy-static.js
+
+# 3. Package with electron-builder → output in dist/
+npx electron-builder
+```
+
+Or run all steps with a single command:
+
+```bash
 npm run electron:build
 ```
+
+The output is placed in `dist/`. On Windows, the default target is a **portable `.exe`** (no installer, runs directly). To change the target, edit the `build.win.target` field in `package.json`.
+
+#### Data persistence
+
+Application data (SQLite database) is stored in the OS user data directory:
+
+| Platform | Path |
+|----------|------|
+| Windows  | `%APPDATA%\Kira Takip\kira-takip\kira.db` |
+| macOS    | `~/Library/Application Support/Kira Takip/kira-takip/kira.db` |
+| Linux    | `~/.config/Kira Takip/kira-takip/kira.db` |
+
+The database is created automatically on first launch using `electron/sqlite-schema.sql`. It persists across restarts and app updates.
+
+#### Changing the build target
+
+To produce an NSIS installer instead of a portable exe, change `package.json`:
+
+```json
+"win": {
+  "target": "nsis",
+  "icon": "electron/icon.ico"
+}
+```
+
+Then re-run `npm run electron:build`.
 
 ### Database Commands
 

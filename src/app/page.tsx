@@ -108,7 +108,7 @@ export default async function Dashboard() {
       <RateBand />
 
       {/* ── KPI Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'stretch' }}>
         <KpiCard
           icon={DollarSign}
           label="Bu Ay Alacak"

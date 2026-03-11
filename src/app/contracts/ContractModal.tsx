@@ -61,6 +61,9 @@ export function ContractModal({ units, tenants }: { units: Unit[]; tenants: Tena
       const d = Number(form.paymentDay);
       if (!Number.isInteger(d) || d < 1 || d > 28)            e.paymentDay = '1–28 arası olmalı';
     }
+    if (form.endDate && form.startDate && form.endDate <= form.startDate) {
+      e.endDate = 'Bitiş tarihi başlangıçtan sonra olmalı';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -186,8 +189,8 @@ export function ContractModal({ units, tenants }: { units: Unit[]; tenants: Tena
                 <Field label="Başlangıç" required error={errors.startDate}>
                   <DateInput name="startDate" value={form.startDate} onChange={set('startDate')} hasError={!!errors.startDate} />
                 </Field>
-                <Field label="Bitiş (opsiyonel)">
-                  <DateInput name="endDate" value={form.endDate} onChange={set('endDate')} />
+                <Field label="Bitiş (opsiyonel)" error={errors.endDate}>
+                  <DateInput name="endDate" value={form.endDate} onChange={set('endDate')} hasError={!!errors.endDate} />
                 </Field>
               </FieldRow>
 

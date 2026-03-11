@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Download, BarChart3 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Download, BarChart3, ChevronDown } from 'lucide-react';
 import {
   Card, PageHeader, Btn, DataTable, Td, TRow, TableSkeleton,
 } from '@/components/ui';
@@ -30,7 +30,7 @@ const COLS = [
 ];
 
 function fmt(n: number) {
-  return `₺${Math.abs(n).toLocaleString('tr-TR')}`;
+  return `₺${Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 }
 
 function NetCell({ n }: { n: number }) {
@@ -44,6 +44,136 @@ function NetCell({ n }: { n: number }) {
   );
 }
 
+function csvRow(cols: (string | number)[]): string {
+  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+}
+
+// ── Export dropdown ────────────────────────────────────────
+function ExportMenu({ report, year }: { report: Report | null; year: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  function downloadMonthlyCsv() {
+    if (!report) return;
+    const header = csvRow(['Ay', 'Alacak (₺)', 'Tahsilat (₺)', 'Gider (₺)', 'Net (₺)']);
+    const rows   = report.rows.map(r =>
+      csvRow([r.month, r.alacak.toFixed(2), r.tahsilat.toFixed(2), r.gider.toFixed(2), r.net.toFixed(2)])
+    );
+    const footer = csvRow(['TOPLAM', report.totals.alacak.toFixed(2), report.totals.tahsilat.toFixed(2), report.totals.gider.toFixed(2), report.totals.net.toFixed(2)]);
+    const csv    = '\uFEFF' + [header, ...rows, footer].join('\r\n');
+    triggerDownload(csv, `kira-rapor-${year}.csv`);
+    setOpen(false);
+  }
+
+  function triggerDownload(csv: string, filename: string) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function downloadFromApi(endpoint: string) {
+    setOpen(false);
+    const res = await fetch(endpoint);
+    if (!res.ok) return;
+    const blob     = await res.blob();
+    const filename = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'export.csv';
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    a.href         = url;
+    a.download     = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const items = [
+    {
+      label: 'Aylık Özet',
+      desc:  `${year} yılı aylık rapor`,
+      onClick: downloadMonthlyCsv,
+      disabled: !report || report.rows.length === 0,
+    },
+    {
+      label: 'Sözleşmeler',
+      desc:  'Tüm sözleşmeler ve detayları',
+      onClick: () => downloadFromApi('/api/export/contracts'),
+      disabled: false,
+    },
+    {
+      label: 'Alacaklar',
+      desc:  'Tüm kira alacakları',
+      onClick: () => downloadFromApi('/api/export/receivables'),
+      disabled: false,
+    },
+    {
+      label: 'Ödemeler',
+      desc:  'Tüm tahsilat kayıtları',
+      onClick: () => downloadFromApi('/api/export/payments'),
+      disabled: false,
+    },
+  ];
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <Btn onClick={() => setOpen(o => !o)} variant="outline">
+        <Download size={14} />
+        CSV İndir
+        <ChevronDown size={12} style={{ marginLeft: 2, transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }} />
+      </Btn>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          width: 240, zIndex: 50,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '6px 10px 4px', borderBottom: '1px solid var(--border)' }}>
+            <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+              Dışa Aktar
+            </p>
+          </div>
+          <div style={{ padding: 4 }}>
+            {items.map(item => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                disabled={item.disabled}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                  width: '100%', padding: '8px 10px', borderRadius: 7,
+                  background: 'none', border: 'none', cursor: item.disabled ? 'default' : 'pointer',
+                  opacity: item.disabled ? 0.4 : 1,
+                  transition: 'background 0.1s',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={e => { if (!item.disabled) (e.currentTarget).style.background = 'var(--surface2)'; }}
+                onMouseLeave={e => { (e.currentTarget).style.background = 'none'; }}
+              >
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>{item.label}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 1 }}>{item.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────
 export default function ReportsPage() {
   const currentYear = new Date().getFullYear();
   const [year,    setYear]    = useState(currentYear);
@@ -58,23 +188,6 @@ export default function ReportsPage() {
   }, [year]);
 
   useEffect(() => { load(); }, [load]);
-
-  function downloadCsv() {
-    if (!report) return;
-    const header = 'Ay,Alacak,Tahsilat,Gider,Net\n';
-    const lines  = report.rows.map(r =>
-      `${r.month},${r.alacak},${r.tahsilat},${r.gider},${r.net}`
-    ).join('\n');
-    const footer = `\nToplam,${report.totals.alacak},${report.totals.tahsilat},${report.totals.gider},${report.totals.net}`;
-    const csv    = header + lines + footer;
-    const blob   = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement('a');
-    a.href     = url;
-    a.download = `kira-rapor-${year}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -92,28 +205,25 @@ export default function ReportsPage() {
             >
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <Btn onClick={downloadCsv} disabled={!report || report.rows.length === 0} variant="outline">
-              <Download size={14} />
-              CSV İndir
-            </Btn>
+            <ExportMenu report={report} year={year} />
           </div>
         }
       />
 
       {/* Yearly totals */}
       {report && report.rows.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {[
             { label: 'Toplam Alacak',   value: fmt(report.totals.alacak),   color: 'var(--text)'    },
             { label: 'Toplam Tahsilat', value: fmt(report.totals.tahsilat), color: 'var(--green)'   },
             { label: 'Toplam Gider',    value: fmt(report.totals.gider),    color: 'var(--red)'     },
             { label: 'Net Gelir',       value: (report.totals.net < 0 ? '−' : '+') + fmt(report.totals.net), color: report.totals.net >= 0 ? 'var(--green)' : 'var(--red)' },
           ].map(item => (
-            <Card key={item.label} style={{ padding: '16px 20px' }}>
+            <Card key={item.label} style={{ padding: '14px 18px' }}>
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
                 {item.label}
               </p>
-              <p style={{ fontSize: '1.25rem', fontWeight: 700, color: item.color, fontFamily: 'ui-monospace, monospace', margin: 0, letterSpacing: '-0.02em' }}>
+              <p style={{ fontSize: '1.125rem', fontWeight: 700, color: item.color, fontFamily: 'ui-monospace, monospace', margin: 0, letterSpacing: '-0.02em' }}>
                 {item.value}
               </p>
             </Card>
@@ -147,7 +257,6 @@ export default function ReportsPage() {
                 <Td right><NetCell n={r.net} /></Td>
               </TRow>
             ))}
-            {/* Totals row */}
             <TRow>
               <Td><span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text)' }}>TOPLAM</span></Td>
               <Td right><span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700 }}>{fmt(report.totals.alacak)}</span></Td>

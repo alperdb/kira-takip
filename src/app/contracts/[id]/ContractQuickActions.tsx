@@ -12,12 +12,13 @@ import { PaymentModal } from '@/components/PaymentModal';
 
 interface Props {
   contractId:  number;
+  startDate:   string;
   endDate?:    string;
   paymentDay:  number;
   tenantName?: string;
 }
 
-export function ContractQuickActions({ contractId, endDate: initEndDate, paymentDay: initPaymentDay, tenantName }: Props) {
+export function ContractQuickActions({ contractId, startDate, endDate: initEndDate, paymentDay: initPaymentDay, tenantName }: Props) {
   const router = useRouter();
 
   const [pdfLoading,   setPdfLoading]   = useState(false);
@@ -61,6 +62,10 @@ export function ContractQuickActions({ contractId, endDate: initEndDate, payment
     const pd = Number(formPayDay);
     if (!pd || pd < 1 || pd > 28) {
       toast.error('Ödeme günü 1–28 arası olmalı');
+      return;
+    }
+    if (formEndDate && formEndDate <= startDate) {
+      toast.error('Bitiş tarihi başlangıç tarihinden sonra olmalı');
       return;
     }
     setSaving(true);

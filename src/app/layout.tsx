@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className={inter.variable}>
-      <body style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      <body style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
         {/* Route-change progress bar — 3px line at the very top */}
         <ProgressBar />
 
@@ -31,17 +31,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div style={{
           marginLeft: 'var(--sidebar-w)',
           transition: 'margin-left 0.25s ease',
-          flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0,
+          flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden',
         }}>
           <Topbar />
-          <main>
+          <main style={{ flex: 1, height: 0, overflowY: 'auto' }}>
             <div style={{
               maxWidth: 1280,
               margin: '0 auto',
-              padding: '24px 24px',
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 24,
+              gap: 16,
             }}>
               {children}
             </div>

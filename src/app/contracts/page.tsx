@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, EmptyState, Badge, Money } from '@/components/ui';
 import { ContractModal } from './ContractModal';
+import { ContractEditModal } from './ContractEditModal';
+import { ContractPdfButton } from './ContractPdfButton';
 import { DeleteButton } from '@/components/DeleteButton';
 import { TerminateButton } from '@/components/TerminateButton';
 import { FileText, TrendingUp } from 'lucide-react';
@@ -15,12 +17,14 @@ const COLS = [
   { label: 'Depozito',   right: true },
   { label: 'Durum'    },
   { label: ''         },  // Yenile linki
+  { label: ''         },  // Düzenle
+  { label: ''         },  // PDF
   { label: ''         },  // Sonlandır
   { label: ''         },  // Delete butonu
 ];
 
 export default async function ContractsPage() {
-  const [contracts, units, tenants] = await Promise.all([
+  const [contracts, vacantUnits, allUnits, tenants] = await Promise.all([
     prisma.contract.findMany({
       include: {
         unit:   { select: { unitNo: true, property: { select: { title: true } } } },
@@ -33,6 +37,10 @@ export default async function ContractsPage() {
       select: { id: true, unitNo: true, property: { select: { title: true } } },
       orderBy: { unitNo: 'asc' },
     }),
+    prisma.unit.findMany({
+      select: { id: true, unitNo: true, property: { select: { title: true } } },
+      orderBy: { unitNo: 'asc' },
+    }),
     prisma.tenant.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
@@ -40,7 +48,7 @@ export default async function ContractsPage() {
     <div>
       <PageHeader
         title="Sözleşmeler"
-        action={<ContractModal units={units} tenants={tenants} />}
+        action={<ContractModal units={vacantUnits} tenants={tenants} />}
       />
       <Card>
         {contracts.length === 0 ? (
@@ -87,6 +95,24 @@ export default async function ContractsPage() {
                       Yenile
                     </Link>
                   )}
+                </Td>
+                <Td>
+                  <ContractEditModal
+                    contract={{
+                      id:         c.id,
+                      unitId:     c.unitId,
+                      tenantId:   c.tenantId,
+                      startDate:  new Date(c.startDate).toISOString().split('T')[0],
+                      endDate:    c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null,
+                      rentAmount: Number(c.rentAmount),
+                      paymentDay: c.paymentDay,
+                    }}
+                    allUnits={allUnits}
+                    allTenants={tenants}
+                  />
+                </Td>
+                <Td>
+                  <ContractPdfButton contractId={c.id} />
                 </Td>
                 <Td>
                   {c.status === 'active' && (

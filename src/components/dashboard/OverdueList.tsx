@@ -16,7 +16,7 @@ type Charge = {
 
 export function OverdueList({ charges }: { charges: Charge[] }) {
   return (
-    <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 380, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{
@@ -58,7 +58,7 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto', maxHeight: 280 }}>
           {charges.map(c => {
             const remaining = Number(c.chargeAmount) - Number(c.paidAmount);
             const overdueDays = Math.floor(

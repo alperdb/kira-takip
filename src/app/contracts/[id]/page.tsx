@@ -73,6 +73,7 @@ export default async function ContractDetailPage({ params }: Params) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ContractQuickActions
             contractId={contract.id}
+            startDate={contract.startDate.toISOString().split('T')[0]}
             endDate={contract.endDate?.toISOString().split('T')[0]}
             paymentDay={contract.paymentDay}
             tenantName={contract.tenant.name}
