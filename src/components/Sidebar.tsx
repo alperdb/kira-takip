@@ -26,16 +26,17 @@ export function Sidebar() {
   const pathname   = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  if (pathname === '/login') return null;
-
   // Restore from localStorage after hydration
   useEffect(() => {
+    if (pathname === '/login') return;
     try {
       const saved = localStorage.getItem('sidebar-collapsed') === '1';
       setCollapsed(saved);
       document.documentElement.classList.toggle('sidebar-collapsed', saved);
     } catch { /* ignore */ }
-  }, []);
+  }, [pathname]);
+
+  if (pathname === '/login') return null;
 
   function toggle() {
     const next = !collapsed;

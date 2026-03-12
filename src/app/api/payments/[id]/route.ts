@@ -35,14 +35,16 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     // Status'u doğru hesapla
     const updated = await prisma.rentCharge.findUnique({ where: { id: payment.rentChargeId } });
     if (updated) {
-      const paid = Number(updated.paidAmount);
+      const paid  = Number(updated.paidAmount);
       const total = Number(updated.chargeAmount);
+      const isOverdue = updated.dueDate < new Date() && paid < total;
       await prisma.rentCharge.update({
         where: { id: updated.id },
         data: {
-          status: paid <= 0 ? 'pending'
-                : paid < total ? 'partial'
-                : 'paid',
+          status: paid >= total ? 'paid'
+                : paid > 0     ? 'partial'
+                : isOverdue    ? 'overdue'
+                :                'pending',
         },
       });
     }

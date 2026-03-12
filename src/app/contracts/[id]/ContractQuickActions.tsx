@@ -22,6 +22,7 @@ export function ContractQuickActions({ contractId, startDate, endDate: initEndDa
   const router = useRouter();
 
   const [pdfLoading,   setPdfLoading]   = useState(false);
+  const [viewLoading,  setViewLoading]  = useState(false);
   const [editOpen,     setEditOpen]     = useState(false);
   const [payOpen,      setPayOpen]      = useState(false);
   const [outstanding,  setOutstanding]  = useState(0);
@@ -35,6 +36,24 @@ export function ContractQuickActions({ contractId, startDate, endDate: initEndDa
       .then(d => { if (d) setOutstanding(d.totalOutstanding); })
       .catch(() => {});
   }, [contractId]);
+
+  async function handleViewPdf() {
+    setViewLoading(true);
+    try {
+      const res = await fetch(`/api/contracts/${contractId}/pdf`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'PDF oluşturulamadı' }));
+        throw new Error(err.error ?? 'PDF oluşturulamadı');
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setViewLoading(false);
+    }
+  }
 
   async function handleDownloadPdf() {
     setPdfLoading(true);
@@ -100,10 +119,11 @@ export function ContractQuickActions({ contractId, startDate, endDate: initEndDa
           <Btn
             variant="ghost"
             style={{ justifyContent: 'flex-start', gap: 8, width: '100%' }}
-            onClick={() => router.push(`/contracts/${contractId}`)}
+            onClick={handleViewPdf}
+            disabled={viewLoading}
           >
             <FileText size={14} />
-            Sözleşmeyi Görüntüle
+            {viewLoading ? 'Yükleniyor...' : 'Sözleşmeyi Görüntüle'}
           </Btn>
 
           <Btn
@@ -144,7 +164,7 @@ export function ContractQuickActions({ contractId, startDate, endDate: initEndDa
               <span style={{
                 marginLeft: 'auto', fontSize: '0.75rem', fontFamily: 'ui-monospace, monospace',
               }}>
-                ₺{outstanding.toLocaleString('tr-TR')}
+                ₺{outstanding.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </Btn>
           )}

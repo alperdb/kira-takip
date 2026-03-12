@@ -30,12 +30,10 @@
       "package.json"
     ],
     "win": {
-      "target": "dir",
-      "icon": "electron/icon.ico"
+      "target": "dir"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "electron/icon.icns"
+      "target": "dmg"
     }
   },
   "dependencies": {

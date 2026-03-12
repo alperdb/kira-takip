@@ -9,6 +9,8 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RateBand } from '@/components/dashboard/RateBand';
 import { UpcomingPayments } from '@/components/dashboard/UpcomingPayments';
 import { ExpiringContracts } from '@/components/dashboard/ExpiringContracts';
+import { FinancialCharts  } from '@/components/dashboard/FinancialCharts';
+import { RecentPayments   } from '@/components/dashboard/RecentPayments';
 import { DollarSign, BarChart3, AlertTriangle, Home } from 'lucide-react';
 
 const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
@@ -16,6 +18,7 @@ const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki'
 async function getData() {
   const now        = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const sixMonAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const [
@@ -39,15 +42,15 @@ async function getData() {
       take: 10,
     }),
     prisma.rentCharge.aggregate({
-      where: { periodStart: { gte: monthStart } },
+      where: { periodStart: { gte: monthStart, lt: monthEnd } },
       _sum: { chargeAmount: true },
     }),
     prisma.rentCharge.aggregate({
-      where: { periodStart: { gte: monthStart } },
+      where: { periodStart: { gte: monthStart, lt: monthEnd } },
       _sum: { paidAmount: true },
     }),
     prisma.expense.aggregate({
-      where: { date: { gte: monthStart } },
+      where: { date: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
     prisma.rentCharge.groupBy({
@@ -91,7 +94,7 @@ function ChartLegend({ color, label }: { color: string; label: string }) {
 // ── Page ────────────────────────────────────────────────
 export default async function Dashboard() {
   const d   = await getData();
-  const fmt = (n: number) => `₺${n.toLocaleString('tr-TR')}`;
+  const fmt = (n: number) => `₺${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const now       = new Date();
   const monthName = now.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
@@ -108,7 +111,7 @@ export default async function Dashboard() {
       <RateBand />
 
       {/* ── KPI Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, alignItems: 'stretch' }}>
         <KpiCard
           icon={DollarSign}
           label="Bu Ay Alacak"
@@ -144,11 +147,14 @@ export default async function Dashboard() {
       <BudgetSummary gelir={d.paid} gider={d.expenses} />
 
       {/* ── Chart + Donut + Quick Actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px 360px', gap: 16, alignItems: 'stretch' }}>
-        <Card>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr minmax(240px, 280px) minmax(300px, 360px)', gap: 20, alignItems: 'stretch' }}>
+
+        {/* Line chart */}
+        <Card style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{
             padding: '20px 24px 0',
             display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+            flexShrink: 0,
           }}>
             <div>
               <p style={{ fontWeight: 600, fontSize: '0.9375rem', margin: '0 0 2px', color: 'var(--text)' }}>
@@ -161,26 +167,25 @@ export default async function Dashboard() {
               <ChartLegend color="var(--green)"   label="Tahsilat" />
             </div>
           </div>
-          <div style={{ padding: '16px 16px 20px' }}>
+          <div style={{ flex: 1, minHeight: 240, padding: '16px 16px 20px' }}>
             <ChartCard data={d.chartData} />
           </div>
         </Card>
 
         {/* Donut chart */}
-        <Card>
-          <div style={{ padding: '20px 20px 0' }}>
+        <Card style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '20px 24px 0', flexShrink: 0 }}>
             <p style={{ fontWeight: 600, fontSize: '0.9375rem', margin: '0 0 2px', color: 'var(--text)' }}>
               {d.expenses > 0 ? 'Gelir & Gider' : 'Tahsilat vs Bekleyen'}
             </p>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>Bu ay</p>
           </div>
-          <div style={{ height: 260, padding: '16px 16px 20px' }}>
+          <div style={{ flex: 1, minHeight: 200, padding: '16px 16px 8px' }}>
             <DonutChart gelir={d.paid} gider={d.expenses} outstanding={d.outstanding} />
           </div>
-          {/* Legend */}
           <div style={{
-            display: 'flex', gap: 14, padding: '0 20px 18px',
-            justifyContent: 'center',
+            display: 'flex', gap: 14, padding: '0 24px 18px',
+            justifyContent: 'center', flexShrink: 0,
           }}>
             {d.expenses > 0 ? (
               <>
@@ -199,12 +204,18 @@ export default async function Dashboard() {
         <QuickActions charged={d.charged} paid={d.paid} />
       </div>
 
+      {/* ── Financial Charts ── */}
+      <FinancialCharts />
+
       {/* ── Bottom widgets ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, alignItems: 'stretch' }}>
         <OverdueList charges={d.overdueCharges} />
         <UpcomingPayments />
         <ExpiringContracts />
       </div>
+
+      {/* ── Recent Payments ── */}
+      <RecentPayments />
     </>
   );
 }

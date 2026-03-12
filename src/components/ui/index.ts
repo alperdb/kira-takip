@@ -10,3 +10,4 @@ export { Field, FieldRow, SectionLabel, FormAlert, TextInput, NumberInput, DateI
 export { ProgressBar } from './ProgressBar';
 export { Toaster, toast } from './Toast';
 export type { ToastType, ToastItem, ToastAction, ToastOptions } from './Toast';
+export { Tooltip } from './tooltip';

@@ -134,7 +134,7 @@ export function ContractModal({ units, tenants }: { units: Unit[]; tenants: Tena
   const fmtDate  = (s: string) =>
     s ? new Date(s).toLocaleDateString('tr-TR') : '—';
   const fmtMoney = (s: string, cur: string) =>
-    s ? `${Number(s).toLocaleString('tr-TR')} ${cur === 'TRY' ? 'TL' : cur}` : '—';
+    s ? `${Number(s).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur === 'TRY' ? 'TL' : cur}` : '—';
 
   const tryHint = (() => {
     if (form.currency === 'TRY' || !form.rentAmount || !rates) return null;

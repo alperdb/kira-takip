@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, Money, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
@@ -17,7 +18,7 @@ const COLS = [
   { label: 'Durum'     },
   { label: 'Kiracı'    },
   { label: 'Kira', right: true },
-  { label: ''          },
+  { label: '', w: 56   },
 ];
 
 export default async function UnitsPage() {
@@ -60,8 +61,13 @@ export default async function UnitsPage() {
         {units.length === 0 ? (
           <EmptyState
             icon={DoorOpen}
-            title="Henüz daire eklenmedi"
-            desc='Önce bir bina ekleyin, ardından "Yeni Daire" ile daire oluşturun.'
+            title="Henüz daire yok"
+            desc={properties.length === 0
+              ? 'Daire ekleyebilmek için önce bir bina kaydı oluşturmanız gerekiyor.'
+              : 'Sağ üstteki "Yeni Daire" butonuyla ilk daireyi ekleyin.'}
+            action={properties.length === 0
+              ? <Link href="/properties" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Binalara Git →</Link>
+              : undefined}
           />
         ) : (
           <DataTable cols={COLS}>
@@ -80,7 +86,7 @@ export default async function UnitsPage() {
                       ? <Money amount={contract.rentAmount} />
                       : <span style={{ color: 'var(--subtle)' }}>—</span>}
                   </Td>
-                  <Td>
+                  <Td action>
                     <DeleteButton endpoint={`/api/units/${u.id}`} label={`${u.property.title} — ${u.unitNo}`} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
                   </Td>
                 </TRow>

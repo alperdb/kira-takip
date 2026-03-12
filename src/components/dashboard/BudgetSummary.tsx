@@ -3,7 +3,7 @@ import { Card } from '@/components/ui';
 type Props = { gelir: number; gider: number };
 
 function fmtTRY(n: number) {
-  return `₺${Math.abs(n).toLocaleString('tr-TR')}`;
+  return `₺${Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function Item({ label, value, color }: { label: string; value: string; color: string }) {

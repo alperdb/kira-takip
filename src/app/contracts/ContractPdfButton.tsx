@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FileDown } from 'lucide-react';
-import { toast } from '@/components/ui';
+import { toast, Tooltip } from '@/components/ui';
 
 export function ContractPdfButton({ contractId }: { contractId: number }) {
   const [loading, setLoading] = useState(false);
@@ -30,22 +30,23 @@ export function ContractPdfButton({ contractId }: { contractId: number }) {
   }
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '4px 10px', borderRadius: 6,
-        fontSize: '0.8125rem', fontWeight: 600,
-        background: 'var(--primary-bg)', color: 'var(--primary)',
-        border: '1px solid var(--primary-ring)',
-        cursor: loading ? 'wait' : 'pointer',
-        opacity: loading ? 0.6 : 1,
-      }}
-      title="PDF İndir"
-    >
-      <FileDown size={12} />
-      {loading ? '...' : 'PDF'}
-    </button>
+    <Tooltip text="PDF İndir" hide={loading}>
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          height: 28, padding: '0 10px', borderRadius: 6,
+          fontSize: '0.8125rem', fontWeight: 600,
+          background: 'var(--primary-bg)', color: 'var(--primary)',
+          border: '1px solid var(--primary-ring)',
+          cursor: loading ? 'wait' : 'pointer',
+          opacity: loading ? 0.6 : 1,
+        }}
+      >
+        <FileDown size={12} />
+        {loading ? '...' : 'PDF'}
+      </button>
+    </Tooltip>
   );
 }

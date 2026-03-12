@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
@@ -16,7 +17,7 @@ const COLS = [
   { label: 'Tür'        },
   { label: 'Daire', center: true },
   { label: 'Kayıt'      },
-  { label: ''           },
+  { label: '', w: 56   },
 ];
 
 export default async function PropertiesPage() {
@@ -55,8 +56,13 @@ export default async function PropertiesPage() {
         {properties.length === 0 ? (
           <EmptyState
             icon={Building2}
-            title="Henüz bina eklenmedi"
-            desc='Mülk sahibi ekledikten sonra "Yeni Bina" ile bina oluşturun.'
+            title="Henüz bina yok"
+            desc={owners.length === 0
+              ? 'Bina ekleyebilmek için önce bir mülk sahibi kaydı oluşturmanız gerekiyor.'
+              : 'Sağ üstteki "Yeni Bina" butonuyla ilk binanızı ekleyin.'}
+            action={owners.length === 0
+              ? <Link href="/owners" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Mülk Sahiplerine Git →</Link>
+              : undefined}
           />
         ) : (
           <DataTable cols={COLS}>
@@ -72,7 +78,7 @@ export default async function PropertiesPage() {
                   </Badge>
                 </Td>
                 <Td muted>{date(p.createdAt)}</Td>
-                <Td>
+                <Td action>
                   <DeleteButton endpoint={`/api/properties/${p.id}`} label={p.title} errorAction={{ label: 'Dairelere Git', href: '/units' }} />
                 </Td>
               </TRow>

@@ -310,12 +310,7 @@ Not yet implemented: authentication, scheduled jobs, email notifications.
 
 ## License
 
-Copyright (c) 2026 alperdb. All rights reserved.
-
-This project is **source available** but not open source.
-
-- You may view and read the source code for personal or evaluation purposes.
-- Commercial use, redistribution, resale, and distribution of modifications are **not permitted** without prior written permission from the copyright holder.
+MIT License — Copyright (c) 2026 alperdb
 
 See the [LICENSE](./LICENSE) file for the full terms.
 

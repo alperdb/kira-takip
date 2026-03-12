@@ -35,13 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }}>
           <Topbar />
           <main style={{ flex: 1, height: 0, overflowY: 'auto' }}>
-            <div style={{
-              maxWidth: 1280,
+            <div className="content-wrapper" style={{
+              maxWidth: 1400,
               margin: '0 auto',
-              padding: '20px 24px',
+              padding: '24px 32px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 20,
             }}>
               {children}
             </div>

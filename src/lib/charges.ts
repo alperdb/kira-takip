@@ -13,7 +13,8 @@ export async function getEffectiveRentAmount(contractId: number, asOfDate: Date)
   if (lastIncrease) return Number(lastIncrease.newAmount);
 
   const contract = await prisma.contract.findUnique({ where: { id: contractId } });
-  return Number(contract!.rentAmount);
+  if (!contract) throw new Error(`Contract ${contractId} not found`);
+  return Number(contract.rentAmount);
 }
 
 // ─── İlk ay orantılı hesap ───────────────────────────────────
@@ -153,11 +154,16 @@ export async function applyPayment(
     });
 
     const newPaid = Number(charge.paidAmount) + paying;
+    const isPastDue = new Date() > new Date(charge.dueDate);
+    const newStatus =
+      newPaid >= Number(charge.chargeAmount) ? 'paid'
+      : isPastDue                            ? 'overdue'
+      :                                        'partial';
     await prisma.rentCharge.update({
       where: { id: charge.id },
       data: {
         paidAmount: newPaid,
-        status:     newPaid >= Number(charge.chargeAmount) ? 'paid' : 'partial',
+        status:     newStatus,
       },
     });
 

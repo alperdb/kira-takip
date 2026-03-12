@@ -76,8 +76,8 @@ export function ContractRenewForm({ contractId, currentRent, currentEndDate }: P
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
           <PreviewRow label="Yeni Başlangıç" value={new Date(newStartDate).toLocaleDateString('tr-TR')} highlight />
           {newEndDate && <PreviewRow label="Yeni Bitiş"    value={new Date(newEndDate).toLocaleDateString('tr-TR')} />}
-          <PreviewRow label="Eski Kira"      value={`₺${currentRent.toLocaleString('tr-TR')}`} />
-          <PreviewRow label="Yeni Kira"      value={`₺${rentNum.toLocaleString('tr-TR')}`} highlight />
+          <PreviewRow label="Eski Kira"      value={`₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <PreviewRow label="Yeni Kira"      value={`₺${rentNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
         </div>
 
         <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 16 }}>
@@ -100,7 +100,7 @@ export function ContractRenewForm({ contractId, currentRent, currentEndDate }: P
 
   return (
     <Card style={{ padding: '20px 24px' }}>
-      <Header subtitle={`Mevcut kira: ₺${currentRent.toLocaleString('tr-TR')}`} />
+      <Header subtitle={`Mevcut kira: ₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <SectionLabel>Yeni Dönem</SectionLabel>

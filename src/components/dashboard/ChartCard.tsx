@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,7 +26,7 @@ function CustomTooltip({ active, payload, label }: {
       <p style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: 6, color: 'var(--text)' }}>{label}</p>
       {payload.map(p => (
         <p key={p.name} style={{ fontSize: '0.8125rem', color: p.color, margin: '2px 0' }}>
-          {p.name === 'alacak' ? 'Alacak' : 'Tahsilat'}: ₺{p.value.toLocaleString('tr-TR')}
+          {p.name === 'alacak' ? 'Alacak' : 'Tahsilat'}: ₺{p.value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
       ))}
     </div>
@@ -42,14 +43,15 @@ export function ChartCard({ data }: { data: MonthlyPoint[] }) {
     return (
       <EmptyState
         icon={BarChart3}
-        title="Henüz veri yok"
-        desc="Alacak oluşturuldukça grafik burada görünecek."
+        title="Henüz alacak verisi yok"
+        desc="Aktif sözleşmeler için alacak oluşturulduğunda grafik burada görünecek."
+        action={<Link href="/charges" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Alacaklara Git →</Link>}
       />
     );
   }
 
   return (
-    <div style={{ height: 260 }}>
+    <div style={{ height: '100%', minHeight: 220 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={theme.border} strokeDasharray="0" vertical={false} />

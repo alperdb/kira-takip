@@ -81,7 +81,7 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
         onClick={handleOpen}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '4px 10px', borderRadius: 6,
+          height: 28, padding: '0 10px', borderRadius: 6,
           fontSize: '0.8125rem', fontWeight: 600,
           background: 'var(--primary-bg)', color: 'var(--primary)',
           border: '1px solid var(--primary-ring)',
@@ -105,7 +105,7 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
               <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: '0 0 16px' }}>
                 <strong style={{ color: 'var(--text)' }}>{label}</strong> — Mevcut kira:{' '}
                 <strong style={{ color: 'var(--primary)', fontFamily: 'ui-monospace, monospace' }}>
-                  ₺{currentRent.toLocaleString('tr-TR')}
+                  ₺{currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </strong>
               </p>
 
@@ -166,8 +166,8 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
                 {[
                   { label: 'Yeni Başlangıç', value: new Date(newStartDate).toLocaleDateString('tr-TR'), hi: true },
                   { label: 'Yeni Bitiş',     value: newEndDate ? new Date(newEndDate).toLocaleDateString('tr-TR') : 'Belirsiz', hi: false },
-                  { label: 'Eski Kira',       value: `₺${currentRent.toLocaleString('tr-TR')}`, hi: false },
-                  { label: 'Yeni Kira',       value: `₺${rentNum.toLocaleString('tr-TR')}`, hi: true },
+                  { label: 'Eski Kira',       value: `₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hi: false },
+                  { label: 'Yeni Kira',       value: `₺${rentNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hi: true },
                 ].map(row => (
                   <div key={row.label} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

@@ -44,6 +44,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
         paymentDay:    contract.paymentDay,
         depositAmount: contract.depositAmount,
         unitNo:        contract.unit.unitNo,
+        bankName:      contract.bankName,
+        iban:          contract.iban,
+        accountHolder: contract.accountHolder,
       },
     });
 

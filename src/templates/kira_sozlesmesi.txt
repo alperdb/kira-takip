@@ -41,7 +41,7 @@ Bu sözleşme ile kiracı, kiralayana {{rentIncreaseDate}} tarihine kadar net {{
 
 Kira artışları her yıl {{rentIncreaseDate}} tarihinde olacak olup, her türlü hukuki hak ve tasarrufta bu tarih nazara alınacak olup, kira akdinin devamı halinde kira bedeli artışı Tüfe oranlarına göre yapılacaktır.
 
-Kiracı kira bedellerini kiralayanın göstereceği banka hesabına yatırılacaktır. {{bankName}} {{iban}} HESABI ADINA YATIRILACAKTIR. DEPOZİTO: {{depositAmount}}
+Kiracı kira bedellerini kiraya verenin aşağıda belirtilen banka hesabına yatıracaktır. Banka: {{bankName}} IBAN: {{iban}} Hesap Sahibi: {{accountHolder}} DEPOZİTO: {{depositAmount}}
 
 Madde 6
 KİRALAMA ÖZEL ŞARTLARI

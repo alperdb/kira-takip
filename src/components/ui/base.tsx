@@ -74,7 +74,7 @@ export function Money({
 }) {
   return (
     <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600, color: 'var(--text)' }}>
-      {currency}{Number(amount).toLocaleString('tr-TR')}
+      {currency}{Number(amount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   );
 }

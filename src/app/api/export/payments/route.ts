@@ -11,7 +11,7 @@ function fmtMoney(n: number | { toString(): string }): string {
 }
 
 function csvRow(cols: string[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
 }
 
 const METHOD_LABELS: Record<string, string> = {

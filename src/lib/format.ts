@@ -3,7 +3,7 @@
  * Use these everywhere instead of inline toLocaleString calls.
  */
 
-const _num  = new Intl.NumberFormat('tr-TR');
+const _num  = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const _date = new Intl.DateTimeFormat('tr-TR');
 const _mon  = new Intl.DateTimeFormat('tr-TR', { month: 'short', year: 'numeric' });
 const _long = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'long' });

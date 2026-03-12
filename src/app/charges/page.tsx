@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { RefreshCw, Receipt } from 'lucide-react';
 import {
   Card, PageHeader, DataTable, Td, TRow,
@@ -31,7 +32,7 @@ const COLS = [
   { label: 'Ödenen',   right: true  },
   { label: 'Kalan',    right: true  },
   { label: 'Durum'                  },
-  { label: '',                      },
+  { label: '', w: 200               },
 ];
 
 export default function ChargesPage() {
@@ -113,8 +114,11 @@ export default function ChargesPage() {
         ) : charges.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="Alacak bulunamadı"
-            desc='Sözleşme oluşturup "Alacak Oluştur" butonuna basın.'
+            title={filter ? 'Bu filtreye ait alacak yok' : 'Henüz alacak kaydı yok'}
+            desc={filter ? 'Farklı bir durum filtresi deneyin.' : 'Aktif sözleşmeleriniz için yukarıdaki "Alacak Oluştur" butonuna tıklayın.'}
+            action={!filter
+              ? <Link href="/contracts" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Sözleşmelere Git →</Link>
+              : undefined}
           />
         ) : (
           <DataTable cols={COLS}>
@@ -145,28 +149,29 @@ export default function ChargesPage() {
                   </Td>
                   <Td right>
                     <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 600, color: 'var(--green)' }}>
-                      ₺{Number(c.paidAmount).toLocaleString('tr-TR')}
+                      ₺{Number(c.paidAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </Td>
                   <Td right>
                     {balance > 0
                       ? <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 700, color: c.status === 'overdue' ? 'var(--red)' : 'var(--text)' }}>
-                          ₺{balance.toLocaleString('tr-TR')}
+                          ₺{balance.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       : <span style={{ color: 'var(--subtle)' }}>—</span>}
                   </Td>
                   <Td><Badge status={c.status} /></Td>
-                  <Td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Td action>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end', padding: '0 8px' }}>
                       {canPay && (
                         <button
                           onClick={() => openModal(c.id, balance, `${c.tenant.name} — ${c.unit.property.title} · ${c.unit.unitNo}`)}
                           aria-label={`${c.tenant.name} için ödeme al`}
                           style={{
-                            padding: '4px 12px', borderRadius: 6,
+                            height: 30, padding: '0 14px', borderRadius: 6,
                             fontSize: '0.8125rem', fontWeight: 600,
-                            background: 'var(--primary-bg)', color: 'var(--primary)',
-                            border: '1px solid var(--primary-ring)', cursor: 'pointer',
+                            background: 'var(--primary)', color: '#fff',
+                            border: 'none', cursor: 'pointer',
+                            whiteSpace: 'nowrap',
                             transition: 'all 0.12s',
                           }}
                         >
@@ -177,7 +182,7 @@ export default function ChargesPage() {
                         endpoint={`/api/charges/${c.id}`}
                         label={`${c.tenant.name} — ${c.unit.unitNo}`}
                         onDeleted={load}
-                        warningText="Alacağa ait tüm ödeme kayıtları da silinir. Bu işlem geri alınamaz."
+                        warningText="Alacak silinir. Ödeme kaydı olan alacaklar silinemez."
                       />
                     </div>
                   </Td>

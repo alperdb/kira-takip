@@ -1,24 +1,28 @@
-export type ColDef = { label: string; right?: boolean; center?: boolean };
+import type { ReactNode } from 'react';
+
+export type ColDef = { label: ReactNode; right?: boolean; center?: boolean; w?: number | string; p?: string };
 
 export function DataTable({
   cols,
   children,
 }: {
   cols: ColDef[];
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={{ overflowX: 'auto' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
       <thead>
         <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
           {cols.map((c, i) => (
             <th key={i} style={{
-              padding: '10px 24px',
+              padding: c.p ?? '10px 24px',
               textAlign: c.right ? 'right' : c.center ? 'center' : 'left',
               fontSize: '0.6875rem', fontWeight: 600,
               color: 'var(--subtle)',
               textTransform: 'uppercase', letterSpacing: '0.08em',
               whiteSpace: 'nowrap',
+              ...(c.w !== undefined ? { width: typeof c.w === 'number' ? `${c.w}px` : c.w } : {}),
             }}>
               {c.label}
             </th>
@@ -27,26 +31,29 @@ export function DataTable({
       </thead>
       <tbody>{children}</tbody>
     </table>
+    </div>
   );
 }
 
 export function Td({
-  children, right, center, muted, mono,
+  children, right, center, muted, mono, action,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   right?: boolean;
   center?: boolean;
   muted?: boolean;
   mono?: boolean;
+  action?: boolean;
 }) {
   return (
     <td style={{
-      padding: '14px 24px',
+      padding: action ? '0 6px' : '14px 24px',
       fontSize: '0.875rem',
       color: muted ? 'var(--muted)' : 'var(--text)',
-      textAlign: right ? 'right' : center ? 'center' : 'left',
+      textAlign: action ? 'center' : right ? 'right' : center ? 'center' : 'left',
       fontFamily: mono ? 'ui-monospace, monospace' : 'inherit',
       whiteSpace: 'nowrap',
+      verticalAlign: 'middle',
     }}>
       {children}
     </td>
@@ -56,7 +63,7 @@ export function Td({
 export function TRow({
   children, onClick,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick?: () => void;
 }) {
   return (

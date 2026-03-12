@@ -28,14 +28,21 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (isNaN(chargeId)) {
       return NextResponse.json({ error: 'Geçersiz id' }, { status: 400 });
     }
-    const charge = await prisma.rentCharge.findUnique({ where: { id: chargeId } });
+    const charge = await prisma.rentCharge.findUnique({
+      where: { id: chargeId },
+      include: { _count: { select: { payments: true } } },
+    });
     if (!charge) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
 
-    // Ödemeleri ve alacağı aynı transaction'da sil
-    await prisma.$transaction([
-      prisma.payment.deleteMany({ where: { rentChargeId: chargeId } }),
-      prisma.rentCharge.delete({ where: { id: chargeId } }),
-    ]);
+    // Block deletion if payments exist — financial history must be preserved
+    if (charge._count.payments > 0) {
+      return NextResponse.json(
+        { error: `Bu alacakta ${charge._count.payments} ödeme kaydı var. Mali geçmişi korumak için ödeme kaydı olan alacaklar silinemez.` },
+        { status: 409 },
+      );
+    }
+
+    await prisma.rentCharge.delete({ where: { id: chargeId } });
 
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

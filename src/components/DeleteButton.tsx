@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
-import { Modal, ModalBody, ModalFooter, Btn, toast } from '@/components/ui';
+import { Modal, ModalBody, ModalFooter, Btn, toast, Tooltip } from '@/components/ui';
 
 export function DeleteButton({
   endpoint,
@@ -53,27 +53,29 @@ export function DeleteButton({
 
   return (
     <>
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(true); }}
-        aria-label={`${label} sil`}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 28, height: 28, borderRadius: 6,
-          border: 'none', cursor: 'pointer',
-          background: 'transparent', color: 'var(--subtle)',
-          transition: 'all 0.12s',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-bg)';
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)';
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--subtle)';
-        }}
-      >
-        <Trash2 size={14} />
-      </button>
+      <Tooltip text="Sil" hide={deleting}>
+        <button
+          onClick={e => { e.stopPropagation(); setOpen(true); }}
+          aria-label={`${label} sil`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, borderRadius: 6,
+            border: 'none', cursor: 'pointer',
+            background: 'transparent', color: 'var(--subtle)',
+            transition: 'all 0.12s',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-bg)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--subtle)';
+          }}
+        >
+          <Trash2 size={14} />
+        </button>
+      </Tooltip>
 
       <Modal open={open} onClose={() => !deleting && setOpen(false)} title="Kaydı Sil" width={400}>
         <ModalBody>

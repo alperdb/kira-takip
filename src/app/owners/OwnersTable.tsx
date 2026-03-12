@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -19,7 +20,7 @@ const COLS = [
   { label: 'E-posta'   },
   { label: 'Bina',    center: true },
   { label: 'Kayıt'     },
-  { label: ''          },
+  { label: '', w: 56  },
 ];
 
 export default function OwnersTable({ owners }: { owners: Owner[] }) {
@@ -27,8 +28,13 @@ export default function OwnersTable({ owners }: { owners: Owner[] }) {
     return (
       <EmptyState
         icon={Users}
-        title="Henüz mülk sahibi eklenmedi"
-        desc='Sağ üstteki "Yeni Mülk Sahibi" butonuyla ilk kaydı oluşturun.'
+        title="Henüz mülk sahibi yok"
+        desc="Mülk sahibi kaydı oluşturarak bina ve daire yönetimine başlayın."
+        action={
+          <span style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: 600 }}>
+            Sağ üstteki "Yeni Mülk Sahibi" butonuna tıklayın
+          </span>
+        }
       />
     );
   }
@@ -48,7 +54,7 @@ export default function OwnersTable({ owners }: { owners: Owner[] }) {
             </Badge>
           </Td>
           <Td muted>{new Date(o.createdAt).toLocaleDateString('tr-TR')}</Td>
-          <Td>
+          <Td action>
             <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} errorAction={{ label: 'Binalara Git', href: '/properties' }} />
           </Td>
         </TRow>

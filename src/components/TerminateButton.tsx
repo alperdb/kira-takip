@@ -46,7 +46,7 @@ export function TerminateButton({
         aria-label={`${label} sonlandır`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '4px 10px', borderRadius: 6,
+          height: 28, padding: '0 10px', borderRadius: 6,
           border: '1px solid var(--border)', cursor: 'pointer',
           background: 'transparent', color: 'var(--muted)',
           fontSize: '0.8125rem', fontWeight: 600,

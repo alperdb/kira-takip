@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const { spawn }  = require('child_process');
 const path       = require('path');
 const http       = require('http');
@@ -14,6 +14,26 @@ function getDbPath() {
   return path.join(app.getPath('userData'), 'kira-takip', 'kira.db');
 }
 
+// ── Resolve Next.js standalone app directory ────────────────
+// On Windows, Next.js nests standalone output under the full project path
+// (e.g. standalone/Desktop/ClaudeProjects/kira-app/server.js)
+// On Linux/Mac the server is directly at standalone/server.js
+function getStandaloneAppDir() {
+  const standaloneBase = path.join(__dirname, '..', '.next', 'standalone');
+  const direct = path.join(standaloneBase, 'server.js');
+  if (fs.existsSync(direct)) return standaloneBase;
+
+  if (process.platform === 'win32') {
+    const appRoot = path.join(__dirname, '..');
+    // Strip drive letter (e.g. C:\) → Desktop\ClaudeProjects\kira-app
+    const withoutDrive = appRoot.replace(/^[A-Za-z]:[\\/]/, '');
+    const nested = path.join(standaloneBase, withoutDrive);
+    if (fs.existsSync(path.join(nested, 'server.js'))) return nested;
+  }
+
+  return standaloneBase; // fallback
+}
+
 // ── Init schema using Prisma binary engine (no ABI issues) ─
 async function initDatabase(dbPath) {
   if (fs.existsSync(dbPath)) return;   // DB already exists — skip
@@ -25,13 +45,13 @@ async function initDatabase(dbPath) {
 
   // Resolve @prisma/client and its query engine binary.
   // In packaged app, we load from the standalone's node_modules.
-  const clientDir = isDev
-    ? path.join(__dirname, '..', 'node_modules', '@prisma', 'client')
-    : path.join(__dirname, '..', '.next', 'standalone', 'node_modules', '@prisma', 'client');
+  const standaloneAppDir = isDev ? null : getStandaloneAppDir();
+  const nodeModulesBase  = isDev
+    ? path.join(__dirname, '..', 'node_modules')
+    : path.join(standaloneAppDir, 'node_modules');
 
-  const enginesDir = isDev
-    ? path.join(__dirname, '..', 'node_modules', '@prisma', 'engines')
-    : path.join(__dirname, '..', '.next', 'standalone', 'node_modules', '@prisma', 'engines');
+  const clientDir  = path.join(nodeModulesBase, '@prisma', 'client');
+  const enginesDir = path.join(nodeModulesBase, '@prisma', 'engines');
 
   // Find the query-engine binary (e.g. query-engine-windows.exe)
   if (fs.existsSync(enginesDir)) {
@@ -136,7 +156,7 @@ app.whenReady().then(async () => {
     });
     createWindow();
   } else {
-    const serverScript = path.join(__dirname, '..', '.next', 'standalone', 'server.js');
+    const serverScript = path.join(getStandaloneAppDir(), 'server.js');
     nextProcess = spawn(process.execPath, [serverScript], {
       env: {
         ...process.env,
@@ -147,13 +167,28 @@ app.whenReady().then(async () => {
       },
       stdio: 'inherit',
     });
-    await waitForServer(DEV_URL);
+
+    // Handle unexpected server crash after window is shown
+    nextProcess.on('exit', (code) => {
+      if (code !== 0 && win) {
+        win.loadURL(`data:text/html,<h2 style="font-family:sans-serif;padding:40px">Sunucu beklenmedik şekilde kapandı (kod: ${code ?? '?'}). Uygulamayı yeniden başlatın.</h2>`);
+      }
+    });
+
+    try {
+      await waitForServer(DEV_URL);
+    } catch (err) {
+      dialog.showErrorBox('Başlatma Hatası', 'Uygulama sunucusu başlatılamadı. Lütfen uygulamayı yeniden başlatın.');
+      app.quit();
+      return;
+    }
+
     createWindow();
   }
 });
 
 app.on('window-all-closed', () => {
-  if (nextProcess) nextProcess.kill();
+  if (nextProcess && nextProcess.exitCode === null) nextProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 

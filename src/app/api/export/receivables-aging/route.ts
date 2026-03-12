@@ -11,7 +11,7 @@ function fmtMoney(n: number): string {
 }
 
 function csvRow(cols: (string | number)[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
 }
 
 function agingBucket(days: number): string {

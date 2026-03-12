@@ -49,7 +49,7 @@ export default async function ContractDetailPage({ params }: Params) {
       </div>
 
       <PageHeader
-        title="Sözleşme Yenile"
+        title="Sözleşme Detayı"
         desc={`${contract.unit.property.title} · ${contract.unit.unitNo} — ${contract.tenant.name}`}
       />
 
@@ -96,7 +96,7 @@ export default async function ContractDetailPage({ params }: Params) {
                 label="Mevcut Kira"
                 value={
                   <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--text)' }}>
-                    ₺{effectiveRent.toLocaleString('tr-TR')}
+                    ₺{effectiveRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 }
               />
@@ -188,21 +188,21 @@ function IncreaseRow({ increase: inc, isLatest }: { increase: IncreaseRecord; is
             fontFamily: 'ui-monospace, monospace', fontSize: '0.8125rem',
             color: 'var(--muted)', textDecoration: 'line-through',
           }}>
-            ₺{Number(inc.oldAmount).toLocaleString('tr-TR')}
+            ₺{Number(inc.oldAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span style={{ color: 'var(--subtle)', fontSize: '0.75rem' }}>→</span>
           <span style={{
             fontFamily: 'ui-monospace, monospace', fontSize: '0.875rem',
             fontWeight: 700, color: 'var(--green)',
           }}>
-            ₺{Number(inc.newAmount).toLocaleString('tr-TR')}
+            ₺{Number(inc.newAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <span style={{
           fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem',
           color: 'var(--primary)', fontWeight: 600,
         }}>
-          +₺{increaseAmount.toLocaleString('tr-TR')}
+          +₺{increaseAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>
     </div>

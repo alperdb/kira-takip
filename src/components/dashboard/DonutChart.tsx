@@ -15,7 +15,7 @@ const fmtShort = (n: number) => {
   const a = Math.abs(n);
   if (a >= 1_000_000) return `₺${(a / 1_000_000).toFixed(1)}M`;
   if (a >= 1_000)     return `₺${(a / 1_000).toFixed(0)}K`;
-  return `₺${a.toLocaleString('tr-TR')}`;
+  return `₺${a.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 type TP = { active?: boolean; payload?: Array<{ name: string; value: number; payload: { raw: number } }> };
@@ -30,7 +30,7 @@ function CustomTooltip({ active, payload }: TP) {
       fontSize: '0.8125rem', color: theme.muted,
     }}>
       <span style={{ fontWeight: 600, color: theme.text }}>{p.name}:</span>{' '}
-      ₺{p.payload.raw.toLocaleString('tr-TR')}{' '}
+      ₺{p.payload.raw.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
       <span style={{ color: theme.subtle }}>({p.value.toFixed(2)}%)</span>
     </div>
   );

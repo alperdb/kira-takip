@@ -112,9 +112,9 @@ export function RentIncreaseForm({ contractId, currentRent }: Props) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-          <PreviewRow label="Eski Kira"      value={`₺${currentRent.toLocaleString('tr-TR')}`} />
-          <PreviewRow label="Yeni Kira"      value={`₺${newRent!.toLocaleString('tr-TR')}`} highlight />
-          <PreviewRow label="Artış Miktarı"  value={`+₺${increaseAmount!.toLocaleString('tr-TR')}`} />
+          <PreviewRow label="Eski Kira"      value={`₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <PreviewRow label="Yeni Kira"      value={`₺${newRent!.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
+          <PreviewRow label="Artış Miktarı"  value={`+₺${increaseAmount!.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
           <PreviewRow label="Oran"           value={`%${derivedRate.toLocaleString('tr-TR')}`} />
           <PreviewRow label="Artış Tipi"     value={increaseType} />
           <PreviewRow label="Geçerlilik"     value={new Date(effectiveDate).toLocaleDateString('tr-TR')} />
@@ -151,7 +151,7 @@ export function RentIncreaseForm({ contractId, currentRent }: Props) {
             Kira Artışı
           </p>
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>
-            Mevcut kira: ₺{currentRent.toLocaleString('tr-TR')}
+            Mevcut kira: ₺{currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function RentIncreaseForm({ contractId, currentRent }: Props) {
               fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)',
               fontFamily: 'ui-monospace, monospace', margin: '4px 0 0', letterSpacing: '-0.02em',
             }}>
-              ₺{currentRent.toLocaleString('tr-TR')}
+              ₺{currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div>
@@ -252,7 +252,7 @@ export function RentIncreaseForm({ contractId, currentRent }: Props) {
               color: increaseAmount != null ? 'var(--primary)' : 'var(--subtle)',
               fontFamily: 'ui-monospace, monospace', margin: '4px 0 0', letterSpacing: '-0.02em',
             }}>
-              {increaseAmount != null ? `+₺${increaseAmount.toLocaleString('tr-TR')}` : '—'}
+              {increaseAmount != null ? `+₺${increaseAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
             </p>
           </div>
           <div>
@@ -267,7 +267,7 @@ export function RentIncreaseForm({ contractId, currentRent }: Props) {
               color: newRent != null ? 'var(--green)' : 'var(--subtle)',
               fontFamily: 'ui-monospace, monospace', margin: '4px 0 0', letterSpacing: '-0.02em',
             }}>
-              {newRent != null ? `₺${newRent.toLocaleString('tr-TR')}` : '—'}
+              {newRent != null ? `₺${newRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
             </p>
           </div>
         </div>

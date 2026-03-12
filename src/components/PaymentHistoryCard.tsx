@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui';
 import { History, CheckCircle2 } from 'lucide-react';
+import { DeleteButton } from '@/components/DeleteButton';
 
 type Row = {
   id:           number;
@@ -29,13 +30,16 @@ export function PaymentHistoryCard({ endpoint }: { endpoint: string }) {
   const [rows,    setRows]    = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
+    setLoading(true);
     fetch(endpoint)
       .then(r => r.ok ? r.json() : [])
       .then(setRows)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [endpoint]);
+
+  useEffect(() => { reload(); }, [reload]);
 
   return (
     <Card style={{ padding: '20px 24px' }}>
@@ -84,10 +88,10 @@ export function PaymentHistoryCard({ endpoint }: { endpoint: string }) {
             <div key={row.id} style={{
               padding: '10px 12px', borderRadius: 8,
               background: 'var(--surface2)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             }}>
               {/* Left: date + period + note */}
-              <div style={{ minWidth: 0 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
                     {new Date(row.paidAt).toLocaleDateString('tr-TR')}
@@ -115,20 +119,28 @@ export function PaymentHistoryCard({ endpoint }: { endpoint: string }) {
                 )}
               </div>
 
-              {/* Right: amount + balance */}
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <p style={{
-                  fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 2px',
-                  color: 'var(--green)', fontFamily: 'ui-monospace, monospace',
-                }}>
-                  +₺{row.amount.toLocaleString('tr-TR')}
-                </p>
-                <p style={{ fontSize: '0.6875rem', color: 'var(--subtle)', margin: 0, whiteSpace: 'nowrap' }}>
-                  {row.balanceAfter === 0
-                    ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Kapandı</span>
-                    : <>Kalan: ₺{row.balanceAfter.toLocaleString('tr-TR')}</>
-                  }
-                </p>
+              {/* Right: amount + balance + delete */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{
+                    fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 2px',
+                    color: 'var(--green)', fontFamily: 'ui-monospace, monospace',
+                  }}>
+                    +₺{row.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p style={{ fontSize: '0.6875rem', color: 'var(--subtle)', margin: 0, whiteSpace: 'nowrap' }}>
+                    {row.balanceAfter === 0
+                      ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Kapandı</span>
+                      : <>Kalan: ₺{row.balanceAfter.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                    }
+                  </p>
+                </div>
+                <DeleteButton
+                  endpoint={`/api/payments/${row.id}`}
+                  label={`₺${row.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} — ${row.chargePeriod}`}
+                  warningText="Ödeme silinir ve alacak bakiyesi güncellenir. Yalnızca son 24 saat içindeki ödemeler silinebilir."
+                  onDeleted={reload}
+                />
               </div>
             </div>
           ))}

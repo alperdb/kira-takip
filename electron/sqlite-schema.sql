@@ -64,6 +64,9 @@ CREATE TABLE IF NOT EXISTS "contracts" (
   "current_rent"       REAL,
   "termination_date"   DATETIME,
   "termination_reason" TEXT,
+  "bank_name"          TEXT,
+  "iban"               TEXT,
+  "account_holder"     TEXT,
   "created_at"         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY ("unit_id")   REFERENCES "units"("id"),
   FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id")

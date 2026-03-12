@@ -5,21 +5,26 @@ import { Download, BarChart3, ChevronDown } from 'lucide-react';
 import {
   Card, PageHeader, Btn, DataTable, Td, TRow, TableSkeleton,
 } from '@/components/ui';
+import { BuildingIncomeTab  } from './BuildingIncomeTab';
+import { TenantsBalanceTab  } from './TenantsBalanceTab';
+import { PaymentHistoryTab  } from './PaymentHistoryTab';
 
 type Row = {
-  key:       string;
-  month:     string;
-  alacak:    number;
-  tahsilat:  number;
-  gider:     number;
-  net:       number;
+  key:      string;
+  month:    string;
+  alacak:   number;
+  tahsilat: number;
+  gider:    number;
+  net:      number;
 };
 
 type Report = {
-  year:    number;
-  rows:    Row[];
-  totals:  { alacak: number; tahsilat: number; gider: number; net: number };
+  year:   number;
+  rows:   Row[];
+  totals: { alacak: number; tahsilat: number; gider: number; net: number };
 };
+
+const TABS = ['Aylık Özet', 'Bina Gelirleri', 'Kiracı Bakiyeleri', 'Ödeme Geçmişi'];
 
 const COLS = [
   { label: 'Ay'                    },
@@ -29,9 +34,8 @@ const COLS = [
   { label: 'Net',      right: true },
 ];
 
-function fmt(n: number) {
-  return `₺${Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
-}
+const fmt = (n: number) =>
+  `₺${Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
 function NetCell({ n }: { n: number }) {
   return (
@@ -45,10 +49,10 @@ function NetCell({ n }: { n: number }) {
 }
 
 function csvRow(cols: (string | number)[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
 }
 
-// ── Export dropdown ────────────────────────────────────────
+// ── Export dropdown ────────────────────────────────────────────
 function ExportMenu({ report, year }: { report: Report | null; year: number }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -98,48 +102,13 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
   }
 
   const items = [
-    {
-      label: 'Aylık Özet',
-      desc:  `${year} yılı aylık rapor`,
-      onClick: downloadMonthlyCsv,
-      disabled: !report || report.rows.length === 0,
-    },
-    {
-      label: 'Sözleşmeler',
-      desc:  'Tüm sözleşmeler ve detayları',
-      onClick: () => downloadFromApi('/api/export/contracts'),
-      disabled: false,
-    },
-    {
-      label: 'Kiracı Ödeme Geçmişi',
-      desc:  'Kiracı bazlı alacak ve ödeme detayları',
-      onClick: () => downloadFromApi('/api/export/tenant-payments'),
-      disabled: false,
-    },
-    {
-      label: 'Mülk Gelir Raporu',
-      desc:  'Mülk bazlı tahsilat ve doluluk özeti',
-      onClick: () => downloadFromApi('/api/export/property-income'),
-      disabled: false,
-    },
-    {
-      label: 'Alacak Yaşlandırma',
-      desc:  'Vadesi geçmiş alacakların yaş analizi',
-      onClick: () => downloadFromApi('/api/export/receivables-aging'),
-      disabled: false,
-    },
-    {
-      label: 'Alacaklar',
-      desc:  'Tüm kira alacakları',
-      onClick: () => downloadFromApi('/api/export/receivables'),
-      disabled: false,
-    },
-    {
-      label: 'Ödemeler',
-      desc:  'Tüm tahsilat kayıtları',
-      onClick: () => downloadFromApi('/api/export/payments'),
-      disabled: false,
-    },
+    { label: 'Aylık Özet',          desc: `${year} yılı aylık rapor`,              onClick: downloadMonthlyCsv,                            disabled: !report || report.rows.length === 0 },
+    { label: 'Sözleşmeler',         desc: 'Tüm sözleşmeler ve detayları',          onClick: () => downloadFromApi('/api/export/contracts'),       disabled: false },
+    { label: 'Kiracı Ödeme Geçmişi',desc: 'Kiracı bazlı alacak ve ödeme detayları',onClick: () => downloadFromApi('/api/export/tenant-payments'),  disabled: false },
+    { label: 'Mülk Gelir Raporu',   desc: 'Mülk bazlı tahsilat ve doluluk özeti',  onClick: () => downloadFromApi('/api/export/property-income'),  disabled: false },
+    { label: 'Alacak Yaşlandırma',  desc: 'Vadesi geçmiş alacakların yaş analizi', onClick: () => downloadFromApi('/api/export/receivables-aging'),disabled: false },
+    { label: 'Alacaklar',           desc: 'Tüm kira alacakları',                   onClick: () => downloadFromApi('/api/export/receivables'),     disabled: false },
+    { label: 'Ödemeler',            desc: 'Tüm tahsilat kayıtları',                onClick: () => downloadFromApi('/api/export/payments'),        disabled: false },
   ];
 
   return (
@@ -173,9 +142,7 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
                   display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                   width: '100%', padding: '8px 10px', borderRadius: 7,
                   background: 'none', border: 'none', cursor: item.disabled ? 'default' : 'pointer',
-                  opacity: item.disabled ? 0.4 : 1,
-                  transition: 'background 0.1s',
-                  textAlign: 'left',
+                  opacity: item.disabled ? 0.4 : 1, textAlign: 'left', transition: 'background 0.1s',
                 }}
                 onMouseEnter={e => { if (!item.disabled) (e.currentTarget).style.background = 'var(--surface2)'; }}
                 onMouseLeave={e => { (e.currentTarget).style.background = 'none'; }}
@@ -191,8 +158,8 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────
-export default function ReportsPage() {
+// ── Monthly summary tab ────────────────────────────────────────
+function MonthlySummaryTab() {
   const currentYear = new Date().getFullYear();
   const [year,    setYear]    = useState(currentYear);
   const [report,  setReport]  = useState<Report | null>(null);
@@ -210,31 +177,26 @@ export default function ReportsPage() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <>
-      <PageHeader
-        title="Raporlar"
-        desc="Aylık ve yıllık mali özet"
-        action={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select
-              value={year}
-              onChange={e => setYear(Number(e.target.value))}
-              style={{ width: 'auto', minWidth: 100 }}
-            >
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <ExportMenu report={report} year={year} />
-          </div>
-        }
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Year selector */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <select
+          value={year}
+          onChange={e => setYear(Number(e.target.value))}
+          style={{ width: 'auto', minWidth: 100 }}
+        >
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <ExportMenu report={report} year={year} />
+      </div>
 
       {/* Yearly totals */}
       {report && report.rows.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {[
-            { label: 'Toplam Alacak',   value: fmt(report.totals.alacak),   color: 'var(--text)'    },
-            { label: 'Toplam Tahsilat', value: fmt(report.totals.tahsilat), color: 'var(--green)'   },
-            { label: 'Toplam Gider',    value: fmt(report.totals.gider),    color: 'var(--red)'     },
+            { label: 'Toplam Alacak',   value: fmt(report.totals.alacak),   color: 'var(--text)'  },
+            { label: 'Toplam Tahsilat', value: fmt(report.totals.tahsilat), color: 'var(--green)' },
+            { label: 'Toplam Gider',    value: fmt(report.totals.gider),    color: 'var(--red)'   },
             { label: 'Net Gelir',       value: (report.totals.net < 0 ? '−' : '+') + fmt(report.totals.net), color: report.totals.net >= 0 ? 'var(--green)' : 'var(--red)' },
           ].map(item => (
             <Card key={item.label} style={{ padding: '14px 18px' }}>
@@ -276,7 +238,7 @@ export default function ReportsPage() {
               </TRow>
             ))}
             <TRow>
-              <Td><span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text)' }}>TOPLAM</span></Td>
+              <Td><span style={{ fontWeight: 700, fontSize: '0.8125rem' }}>TOPLAM</span></Td>
               <Td right><span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700 }}>{fmt(report.totals.alacak)}</span></Td>
               <Td right><span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--green)' }}>{fmt(report.totals.tahsilat)}</span></Td>
               <Td right><span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--red)' }}>−{fmt(report.totals.gider)}</span></Td>
@@ -285,6 +247,60 @@ export default function ReportsPage() {
           </DataTable>
         )}
       </Card>
+    </div>
+  );
+}
+
+// ── Tab bar ───────────────────────────────────────────────────
+function TabBar({ active, onChange }: { active: number; onChange: (i: number) => void }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 4,
+      borderBottom: '1px solid var(--border)',
+      marginBottom: 4,
+    }}>
+      {TABS.map((label, i) => (
+        <button
+          key={label}
+          onClick={() => onChange(i)}
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.875rem',
+            fontWeight: active === i ? 600 : 400,
+            color: active === i ? 'var(--primary)' : 'var(--muted)',
+            background: 'none',
+            border: 'none',
+            borderBottom: active === i ? '2px solid var(--primary)' : '2px solid transparent',
+            marginBottom: -1,
+            cursor: 'pointer',
+            borderRadius: '6px 6px 0 0',
+            transition: 'color 0.12s',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────
+export default function ReportsPage() {
+  const [tab, setTab] = useState(0);
+
+  return (
+    <>
+      <PageHeader
+        title="Raporlar"
+        desc="Mali özet, bina gelirleri ve ödeme geçmişi"
+      />
+
+      <TabBar active={tab} onChange={setTab} />
+
+      {tab === 0 && <MonthlySummaryTab />}
+      {tab === 1 && <BuildingIncomeTab />}
+      {tab === 2 && <TenantsBalanceTab />}
+      {tab === 3 && <PaymentHistoryTab />}
     </>
   );
 }

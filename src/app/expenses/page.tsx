@@ -30,7 +30,7 @@ const COLS = [
   { label: 'Kategori' },
   { label: 'Açıklama' },
   { label: 'Tutar', right: true },
-  { label: ''          },
+  { label: '', w: 56   },
 ];
 
 export default function ExpensesPage() {
@@ -115,7 +115,7 @@ export default function ExpensesPage() {
               {expenses.length} kayıt
             </span>
             <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--red)', fontSize: '1rem' }}>
-              −₺{total.toLocaleString('tr-TR')}
+              −₺{total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </Card>
@@ -129,8 +129,13 @@ export default function ExpensesPage() {
         ) : expenses.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="Henüz gider eklenmedi"
-            desc="Bakım, tamir ve diğer giderleri buradan takip edin."
+            title="Henüz gider kaydı yok"
+            desc="Bakım, tamir ve operasyonel giderleri buraya ekleyin."
+            action={
+              <span style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: 600 }}>
+                Sağ üstteki "Gider Ekle" butonuna tıklayın
+              </span>
+            }
           />
         ) : (
           <DataTable cols={COLS}>
@@ -149,7 +154,7 @@ export default function ExpensesPage() {
                     −<Money amount={e.amount} currency="" />
                   </span>
                 </Td>
-                <Td>
+                <Td action>
                   <DeleteButton
                     endpoint={`/api/expenses/${e.id}`}
                     label={e.description ?? `Gider #${e.id}`}

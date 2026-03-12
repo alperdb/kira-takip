@@ -19,12 +19,6 @@ const nextConfig: NextConfig = {
         { key: 'X-Frame-Options',        value: 'DENY'    },
       ],
     },
-    {
-      source: '/api/(.*)',
-      headers: [
-        { key: 'Content-Type', value: 'application/json; charset=utf-8' },
-      ],
-    },
   ],
 
   // Suppress the dev overlay "rendering..." indicator in production

@@ -2,10 +2,12 @@ export function EmptyState({
   icon: Icon,
   title,
   desc,
+  action,
 }: {
   icon?: React.ElementType;
   title: string;
   desc?: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div style={{
@@ -29,6 +31,7 @@ export function EmptyState({
           {desc}
         </p>
       )}
+      {action && <div style={{ marginTop: 4 }}>{action}</div>}
     </div>
   );
 }

@@ -95,6 +95,9 @@ model Contract {
   currentRent       Float?   @map("current_rent")
   terminationDate   DateTime? @map("termination_date")
   terminationReason String?  @map("termination_reason")
+  bankName          String?  @map("bank_name")
+  iban              String?  @map("iban")
+  accountHolder     String?  @map("account_holder")
   createdAt         DateTime @default(now()) @map("created_at")
 
   unit                Unit                  @relation(fields: [unitId], references: [id])

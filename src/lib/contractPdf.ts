@@ -2,10 +2,20 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 
+// Windows font paths — Arial supports full Turkish character set
 const FONT_REGULAR = 'C:/Windows/Fonts/arial.ttf';
 const FONT_BOLD    = 'C:/Windows/Fonts/arialbd.ttf';
 
 const TEMPLATE_PATH = path.join(process.cwd(), 'src/templates/kira_sozlesmesi.txt');
+
+function checkFonts() {
+  if (!fs.existsSync(FONT_REGULAR)) {
+    throw new Error(`Font bulunamadı: ${FONT_REGULAR}. PDF oluşturmak için Arial fontunun yüklü olması gerekiyor.`);
+  }
+  if (!fs.existsSync(FONT_BOLD)) {
+    throw new Error(`Font bulunamadı: ${FONT_BOLD}. PDF oluşturmak için Arial Bold fontunun yüklü olması gerekiyor.`);
+  }
+}
 
 // ── Section detection ─────────────────────────────────────────
 function isTitle(line: string)      { return line === 'KİRA SÖZLEŞMESİ'; }
@@ -17,10 +27,14 @@ function isSectionLabel(line: string) {
 }
 
 export function loadTemplate(): string {
+  if (!fs.existsSync(TEMPLATE_PATH)) {
+    throw new Error(`Sözleşme şablonu bulunamadı: ${TEMPLATE_PATH}`);
+  }
   return fs.readFileSync(TEMPLATE_PATH, 'utf-8');
 }
 
 export function generateContractPdf(filledText: string): Promise<Buffer> {
+  checkFonts();
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size:    'A4',

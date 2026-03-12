@@ -12,7 +12,7 @@ const COLS = [
   { label: 'E-posta'    },
   { label: 'Sözleşme', center: true },
   { label: 'Kayıt'      },
-  { label: ''           },
+  { label: '', w: 56   },
 ];
 
 export default async function TenantsPage() {
@@ -39,8 +39,13 @@ export default async function TenantsPage() {
         {tenants.length === 0 ? (
           <EmptyState
             icon={UserCheck}
-            title="Henüz kiracı eklenmedi"
-            desc='"Yeni Kiracı" butonuyla ilk kaydı oluşturun.'
+            title="Henüz kiracı yok"
+            desc='Kiracı kaydı oluşturun, ardından sözleşme ile daireye bağlayın.'
+            action={
+              <span style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: 600 }}>
+                Sağ üstteki "Yeni Kiracı" butonuna tıklayın
+              </span>
+            }
           />
         ) : (
           <DataTable cols={COLS}>
@@ -69,7 +74,7 @@ export default async function TenantsPage() {
                   </Badge>
                 </Td>
                 <Td muted>{date(t.createdAt)}</Td>
-                <Td>
+                <Td action>
                   <DeleteButton endpoint={`/api/tenants/${t.id}`} label={t.name} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
                 </Td>
               </TRow>

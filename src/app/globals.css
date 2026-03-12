@@ -133,6 +133,11 @@ label {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-s); border-radius: 3px; }
 
+/* ── Large screen spacing ────────────────────────────── */
+@media (min-width: 1600px) {
+  .content-wrapper { padding: 28px 48px !important; gap: 24px !important; }
+}
+
 /* ── Print ───────────────────────────────────────────── */
 @media print {
   aside, header, .no-print { display: none !important; }

@@ -96,7 +96,7 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
                       fontSize: '0.8125rem', fontWeight: 700, margin: '0 0 1px',
                       color: 'var(--red)', fontFamily: 'ui-monospace, monospace',
                     }}>
-                      ₺{remaining.toLocaleString('tr-TR')}
+                      ₺{remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p style={{ fontSize: '0.6875rem', color: 'var(--subtle)', margin: 0, whiteSpace: 'nowrap' }}>
                       {overdueDays}g gecikmiş

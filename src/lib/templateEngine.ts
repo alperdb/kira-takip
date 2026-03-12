@@ -34,6 +34,9 @@ export interface ContractBindingInput {
     paymentDay: number;
     depositAmount?: number;
     unitNo?: string;
+    bankName?: string | null;
+    iban?: string | null;
+    accountHolder?: string | null;
   };
 }
 
@@ -80,9 +83,10 @@ export function bindContractData(input: ContractBindingInput): TemplateData {
     paymentDay:         String(contract.paymentDay),
     rentIncreaseDate:   '',
 
-    // Bank (left empty — filled manually)
-    bankName: '',
-    iban:     '',
+    // Bank
+    bankName:      contract.bankName      ?? '',
+    iban:          contract.iban          ?? '',
+    accountHolder: contract.accountHolder ?? '',
 
     // Court
     courtCity: property.city ?? '',

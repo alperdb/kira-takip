@@ -3,8 +3,11 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Card, Badge } from '@/components/ui';
 import { PaymentHistoryCard } from '@/components/PaymentHistoryCard';
-import { ArrowLeft, Phone, Mail, CreditCard, MapPin, FileText } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, CreditCard, MapPin, FileText, TrendingUp } from 'lucide-react';
 import { initial, date } from '@/lib/format';
+
+const tryCurrency = (n: number) =>
+  '₺' + n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -24,6 +27,15 @@ export default async function TenantDetailPage({ params }: Params) {
   });
 
   if (!tenant) notFound();
+
+  const financials = await prisma.rentCharge.aggregate({
+    where: { tenantId: tenant.id, status: { not: 'waived' } },
+    _sum: { chargeAmount: true, paidAmount: true },
+  });
+
+  const totalCharged = Number(financials._sum.chargeAmount ?? 0);
+  const totalPaid    = Number(financials._sum.paidAmount   ?? 0);
+  const balance      = totalCharged - totalPaid;
 
   const activeContract = tenant.contracts.find(c => c.status === 'active');
 
@@ -73,6 +85,27 @@ export default async function TenantDetailPage({ params }: Params) {
         {/* Sağ: Bilgi kartları */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+          {/* Finansal Özet */}
+          <Card style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <TrendingUp size={14} color="var(--muted)" />
+              <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0, color: 'var(--text)' }}>
+                Finansal Özet
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <FinRow label="Toplam Alacak" value={tryCurrency(totalCharged)} color="var(--text)" />
+              <FinRow label="Toplam Tahsilat" value={tryCurrency(totalPaid)} color="var(--green)" />
+              <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+              <FinRow
+                label="Bakiye"
+                value={tryCurrency(balance)}
+                color={balance > 0 ? 'var(--red)' : 'var(--green)'}
+                bold
+              />
+            </div>
+          </Card>
+
           {/* Kişisel bilgiler */}
           <Card style={{ padding: '20px 24px' }}>
             <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: '0 0 14px', color: 'var(--text)' }}>
@@ -112,9 +145,17 @@ export default async function TenantDetailPage({ params }: Params) {
             </div>
 
             {tenant.contracts.length === 0 ? (
-              <p style={{ fontSize: '0.875rem', color: 'var(--subtle)', margin: 0, textAlign: 'center' }}>
-                Sözleşme bulunamadı.
-              </p>
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--subtle)', margin: '0 0 6px' }}>
+                  Bu kiracıya ait sözleşme yok.
+                </p>
+                <Link
+                  href="/contracts"
+                  style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}
+                >
+                  Sözleşme Oluştur →
+                </Link>
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {tenant.contracts.map(c => (
@@ -152,6 +193,20 @@ export default async function TenantDetailPage({ params }: Params) {
         </div>
       </div>
     </>
+  );
+}
+
+function FinRow({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}>
+      <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{label}</span>
+      <span style={{
+        fontSize: '0.8125rem', fontFamily: 'ui-monospace, monospace',
+        fontWeight: bold ? 700 : 600, color: color ?? 'var(--text)',
+      }}>
+        {value}
+      </span>
+    </div>
   );
 }
 

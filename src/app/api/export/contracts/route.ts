@@ -11,7 +11,7 @@ function fmtCurrency(n: number | { toString(): string }, cur = 'TRY'): string {
 }
 
 function csvRow(cols: string[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
+  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
 }
 
 export async function GET() {

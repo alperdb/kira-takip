@@ -1,27 +1,7 @@
 import { prisma } from '@/lib/db';
-import { Card, PageHeader, DataTable, Td, TRow, EmptyState, Badge, Money } from '@/components/ui';
+import { PageHeader } from '@/components/ui';
 import { ContractModal } from './ContractModal';
-import { ContractEditModal } from './ContractEditModal';
-import { ContractRenewModal } from './ContractRenewModal';
-import { ContractPdfButton } from './ContractPdfButton';
-import { DeleteButton } from '@/components/DeleteButton';
-import { TerminateButton } from '@/components/TerminateButton';
-import { FileText } from 'lucide-react';
-
-const COLS = [
-  { label: 'Daire'    },
-  { label: 'Kiracı'   },
-  { label: 'Başlangıç'},
-  { label: 'Bitiş'    },
-  { label: 'Kira / Ay',  right: true },
-  { label: 'Depozito',   right: true },
-  { label: 'Durum'    },
-  { label: ''         },  // Yenile linki
-  { label: ''         },  // Düzenle
-  { label: ''         },  // PDF
-  { label: ''         },  // Sonlandır
-  { label: ''         },  // Delete butonu
-];
+import { ContractsTable } from './ContractsTable';
 
 export default async function ContractsPage() {
   const [contracts, vacantUnits, allUnits, tenants] = await Promise.all([
@@ -44,88 +24,33 @@ export default async function ContractsPage() {
     prisma.tenant.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
+  // Serialize Prisma types before passing to client component
+  const serialized = contracts.map(c => ({
+    ...c,
+    startDate:       c.startDate.toISOString(),
+    endDate:         c.endDate?.toISOString() ?? null,
+    rentAmount:      Number(c.rentAmount),
+    currentRent:     c.currentRent !== null ? Number(c.currentRent) : null,
+    depositAmount:   Number(c.depositAmount),
+    terminationDate: c.terminationDate?.toISOString() ?? null,
+    depositDate:     c.depositDate?.toISOString() ?? null,
+    createdAt:       c.createdAt.toISOString(),
+    bankName:        c.bankName ?? null,
+    iban:            c.iban ?? null,
+    accountHolder:   c.accountHolder ?? null,
+  }));
+
   return (
     <div>
       <PageHeader
         title="Sözleşmeler"
         action={<ContractModal units={vacantUnits} tenants={tenants} />}
       />
-      <Card>
-        {contracts.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Henüz sözleşme eklenmedi"
-            desc="Boş bir daire ve kiracı seçerek yeni sözleşme oluşturun."
-          />
-        ) : (
-          <DataTable cols={COLS}>
-            {contracts.map(c => (
-              <TRow key={c.id}>
-                <Td>
-                  <div style={{ fontWeight: 600 }}>{c.unit.unitNo}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{c.unit.property.title}</div>
-                </Td>
-                <Td>
-                  <div style={{ fontWeight: 500 }}>{c.tenant.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{c.tenant.phone ?? ''}</div>
-                </Td>
-                <Td muted>{new Date(c.startDate).toLocaleDateString('tr-TR')}</Td>
-                <Td muted>{c.endDate ? new Date(c.endDate).toLocaleDateString('tr-TR') : '—'}</Td>
-                <Td right><Money amount={c.currentRent ?? c.rentAmount} /></Td>
-                <Td right>
-                  {Number(c.depositAmount) > 0
-                    ? <Money amount={c.depositAmount} />
-                    : <span style={{ color: 'var(--subtle)' }}>—</span>}
-                </Td>
-                <Td><Badge status={c.status} /></Td>
-                <Td>
-                  {c.status === 'active' && (
-                    <ContractRenewModal
-                      contractId={c.id}
-                      currentRent={Number(c.currentRent ?? c.rentAmount)}
-                      currentEndDate={c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null}
-                      label={`${c.unit.unitNo} — ${c.tenant.name}`}
-                    />
-                  )}
-                </Td>
-                <Td>
-                  <ContractEditModal
-                    contract={{
-                      id:         c.id,
-                      unitId:     c.unitId,
-                      tenantId:   c.tenantId,
-                      startDate:  new Date(c.startDate).toISOString().split('T')[0],
-                      endDate:    c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null,
-                      rentAmount: Number(c.rentAmount),
-                      paymentDay: c.paymentDay,
-                    }}
-                    allUnits={allUnits}
-                    allTenants={tenants}
-                  />
-                </Td>
-                <Td>
-                  <ContractPdfButton contractId={c.id} />
-                </Td>
-                <Td>
-                  {c.status === 'active' && (
-                    <TerminateButton
-                      contractId={c.id}
-                      label={`${c.unit.unitNo} — ${c.tenant.name}`}
-                    />
-                  )}
-                </Td>
-                <Td>
-                  <DeleteButton
-                    endpoint={`/api/contracts/${c.id}`}
-                    label={`${c.unit.unitNo} — ${c.tenant.name}`}
-                    errorAction={{ label: 'Alacaklara Git', href: '/charges' }}
-                  />
-                </Td>
-              </TRow>
-            ))}
-          </DataTable>
-        )}
-      </Card>
+      <ContractsTable
+        contracts={serialized}
+        allUnits={allUnits}
+        tenants={tenants}
+      />
     </div>
   );
 }
