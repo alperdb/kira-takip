@@ -93,12 +93,12 @@ function RestoreSection() {
     <>
       <SettingRow
         title="Yedekten Geri Yükle"
-        desc="Daha önce alınan bir .backup dosyasından tüm verileri geri yükle. Mevcut veriler silinir."
+        desc="Daha önce alınan bir yedek dosyasından (.db veya .backup) tüm verileri geri yükle. Mevcut veriler silinir."
       >
         <input
           ref={fileRef}
           type="file"
-          accept=".backup"
+          accept=".backup,.db"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />

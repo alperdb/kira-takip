@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const status     = searchParams.get('status');
     const contractId = searchParams.get('contract_id');
     const unitId     = searchParams.get('unit_id');
+    const ownerId    = searchParams.get('ownerId');
     const from       = searchParams.get('from');
     const to         = searchParams.get('to');
 
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
         ...(status     ? { status: status as 'pending' | 'partial' | 'paid' | 'overdue' | 'waived' } : {}),
         ...(contractId ? { contractId: Number(contractId) } : {}),
         ...(unitId     ? { unitId:     Number(unitId) }     : {}),
+        ...(ownerId    ? { unit: { property: { ownerId: Number(ownerId) } } } : {}),
         ...(from || to ? {
           periodStart: {
             ...(from ? { gte: new Date(from) } : {}),

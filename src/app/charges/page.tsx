@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { RefreshCw, Receipt } from 'lucide-react';
+
+type Owner = { id: number; name: string };
 import {
   Card, PageHeader, DataTable, Td, TRow,
   Badge, Money, Btn, EmptyState, TableSkeleton,
@@ -38,18 +40,27 @@ const COLS = [
 export default function ChargesPage() {
   const [charges,    setCharges]    = useState<Charge[]>([]);
   const [filter,     setFilter]     = useState('');
+  const [ownerId,    setOwnerId]    = useState('');
+  const [owners,     setOwners]     = useState<Owner[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [generating, setGenerating] = useState(false);
 
   const [payModal, setPayModal] = useState<{ chargeId: number; remaining: number; label: string } | null>(null);
 
+  useEffect(() => {
+    fetch('/api/owners').then(r => r.json()).then(setOwners).catch(() => {});
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const qs  = filter ? `?status=${filter}` : '';
+    const params = new URLSearchParams();
+    if (filter)  params.set('status',  filter);
+    if (ownerId) params.set('ownerId', ownerId);
+    const qs  = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`/api/charges${qs}`);
     setCharges(await res.json());
     setLoading(false);
-  }, [filter]);
+  }, [filter, ownerId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -83,6 +94,19 @@ export default function ChargesPage() {
         desc="Kira alacakları ve ödemeler"
         action={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {owners.length > 1 && (
+              <select
+                value={ownerId}
+                onChange={e => setOwnerId(e.target.value)}
+                style={{ width: 'auto', minWidth: 160 }}
+                aria-label="Sahip filtresi"
+              >
+                <option value="">Tüm Sahipler</option>
+                {owners.map(o => (
+                  <option key={o.id} value={String(o.id)}>{o.name}</option>
+                ))}
+              </select>
+            )}
             <select
               value={filter}
               onChange={e => setFilter(e.target.value)}

@@ -2,10 +2,20 @@ import { prisma } from '@/lib/db';
 import { PageHeader } from '@/components/ui';
 import { ContractModal } from './ContractModal';
 import { ContractsTable } from './ContractsTable';
+import { OwnerSelect } from '@/components/OwnerSelect';
 
-export default async function ContractsPage() {
-  const [contracts, vacantUnits, allUnits, tenants] = await Promise.all([
+export default async function ContractsPage({
+  searchParams,
+}: {
+  searchParams: { ownerId?: string };
+}) {
+  const ownerIdFilter = searchParams.ownerId ? Number(searchParams.ownerId) : undefined;
+
+  const [contracts, vacantUnits, allUnits, tenants, owners] = await Promise.all([
     prisma.contract.findMany({
+      where: ownerIdFilter
+        ? { unit: { property: { ownerId: ownerIdFilter } } }
+        : {},
       include: {
         unit:   { select: { unitNo: true, property: { select: { title: true } } } },
         tenant: { select: { name: true, phone: true } },
@@ -22,9 +32,9 @@ export default async function ContractsPage() {
       orderBy: { unitNo: 'asc' },
     }),
     prisma.tenant.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    prisma.owner.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
-  // Serialize Prisma types before passing to client component
   const serialized = contracts.map(c => ({
     ...c,
     startDate:       c.startDate.toISOString(),
@@ -44,7 +54,12 @@ export default async function ContractsPage() {
     <div>
       <PageHeader
         title="Sözleşmeler"
-        action={<ContractModal units={vacantUnits} tenants={tenants} />}
+        action={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <OwnerSelect owners={owners} currentOwnerId={ownerIdFilter} />
+            <ContractModal units={vacantUnits} tenants={tenants} />
+          </div>
+        }
       />
       <ContractsTable
         contracts={serialized}

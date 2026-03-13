@@ -1,30 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import fs from 'fs';
-import path from 'path';
-
-function getDbPath(): string {
-  const url = process.env.DATABASE_URL ?? '';
-  const filePath = url.replace(/^file:/, '');
-  return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-}
+import { createBackup } from '@/lib/backup/createBackup';
 
 export async function GET() {
   try {
-    const dbPath = getDbPath();
+    const { data, filename } = await createBackup();
 
-    if (!fs.existsSync(dbPath)) {
-      return NextResponse.json({ error: 'Veritabanı dosyası bulunamadı' }, { status: 404 });
-    }
-
-    // Flush WAL to main DB file before copying
-    await prisma.$executeRawUnsafe('PRAGMA wal_checkpoint(FULL)');
-
-    const data     = fs.readFileSync(dbPath);
-    const today    = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `kira-backup-${today}.backup`;
-
-    return new NextResponse(data, {
+    return new NextResponse(data as unknown as BodyInit, {
       headers: {
         'Content-Type':        'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
