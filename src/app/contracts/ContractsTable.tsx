@@ -83,6 +83,7 @@ function CheckBox({
 // ── Main component ───────────────────────────────────────────────
 export function ContractsTable({ contracts, allUnits, tenants }: Props) {
   const router = useRouter();
+  const [tab,           setTab]           = useState<'active' | 'terminated'>('active');
   const [selected,      setSelected]      = useState<Set<number>>(new Set());
   const [terminateOpen, setTerminateOpen] = useState(false);
   const [deleteOpen,    setDeleteOpen]    = useState(false);
@@ -90,9 +91,18 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
   const [loading,       setLoading]       = useState(false);
   const [pdfLoading,    setPdfLoading]    = useState(false);
 
-  const allIds        = contracts.map(c => c.id);
+  const activeContracts     = contracts.filter(c => c.status === 'active' || c.status === 'renewed');
+  const terminatedContracts = contracts.filter(c => c.status !== 'active' && c.status !== 'renewed');
+  const visible             = tab === 'active' ? activeContracts : terminatedContracts;
+
+  const allIds        = visible.map(c => c.id);
   const allSelected   = selected.size > 0 && selected.size === allIds.length;
   const indeterminate = selected.size > 0 && selected.size < allIds.length;
+
+  function switchTab(t: 'active' | 'terminated') {
+    setTab(t);
+    setSelected(new Set());
+  }
 
   function toggleAll() {
     setSelected(allSelected || indeterminate ? new Set() : new Set(allIds));
@@ -204,6 +214,36 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
 
   return (
     <>
+      {/* ── Tab bar ── */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 14 }}>
+        {([
+          { key: 'active',     label: 'Aktif',        count: activeContracts.length },
+          { key: 'terminated', label: 'Sonlandırılan', count: terminatedContracts.length },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => switchTab(t.key)}
+            style={{
+              padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontSize: '0.875rem', fontWeight: 600,
+              background: tab === t.key ? 'var(--primary)' : 'transparent',
+              color:      tab === t.key ? '#fff'           : 'var(--muted)',
+              transition: 'background 0.12s, color 0.12s',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {t.label}
+            <span style={{
+              padding: '1px 7px', borderRadius: 10, fontSize: '0.75rem',
+              background: tab === t.key ? 'rgba(255,255,255,0.25)' : 'var(--surface2)',
+              color:      tab === t.key ? '#fff' : 'var(--muted)',
+            }}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* ── Bulk action bar ── */}
       {selected.size > 0 && (
         <div style={{
@@ -221,10 +261,12 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
             <FileDown size={13} />
             {pdfLoading ? 'İndiriliyor...' : 'PDF Oluştur'}
           </Btn>
-          <Btn variant="outline" onClick={() => setTerminateOpen(true)}>
-            <PowerOff size={13} />
-            Sonlandır
-          </Btn>
+          {tab === 'active' && (
+            <Btn variant="outline" onClick={() => setTerminateOpen(true)}>
+              <PowerOff size={13} />
+              Sonlandır
+            </Btn>
+          )}
           <Btn variant="destructive" onClick={openDeleteModal}>Sil</Btn>
           <Btn variant="ghost" onClick={() => setSelected(new Set())}>İptal</Btn>
         </div>
@@ -232,22 +274,22 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
 
       {/* ── Table ── */}
       <Card>
-        {contracts.length === 0 ? (
+        {visible.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="Henüz sözleşme yok"
-            desc="Kiracı ve boş daire eşleştirerek kira sözleşmesi oluşturun."
-            action={
+            title={tab === 'active' ? 'Aktif sözleşme yok' : 'Sonlandırılan sözleşme yok'}
+            desc={tab === 'active' ? 'Kiracı ve boş daire eşleştirerek kira sözleşmesi oluşturun.' : 'Sonlandırılan sözleşme bulunamadı.'}
+            action={tab === 'active' ? (
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <Link href="/tenants" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Kiracı Ekle →</Link>
                 <span style={{ color: 'var(--border)' }}>|</span>
                 <Link href="/units" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Daire Ekle →</Link>
               </div>
-            }
+            ) : undefined}
           />
         ) : (
           <DataTable cols={cols}>
-            {contracts.map(c => {
+            {visible.map(c => {
               const startStr = new Date(c.startDate).toISOString().split('T')[0];
               const endStr   = c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : null;
               const isActive = c.status === 'active';
