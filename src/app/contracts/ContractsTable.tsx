@@ -83,14 +83,12 @@ function CheckBox({
 // ── Main component ───────────────────────────────────────────────
 export function ContractsTable({ contracts, allUnits, tenants }: Props) {
   const router = useRouter();
-  const [selected,        setSelected]        = useState<Set<number>>(new Set());
-  const [terminateOpen,   setTerminateOpen]   = useState(false);
-  const [deleteOpen,      setDeleteOpen]      = useState(false);
-  const [deleteHasCharges,  setDeleteHasCharges]  = useState(false);
-  const [deleteHasPayments, setDeleteHasPayments] = useState(false);
-  const [deleteChargesMsg,  setDeleteChargesMsg]  = useState('');
-  const [loading,         setLoading]         = useState(false);
-  const [pdfLoading,      setPdfLoading]      = useState(false);
+  const [selected,      setSelected]      = useState<Set<number>>(new Set());
+  const [terminateOpen, setTerminateOpen] = useState(false);
+  const [deleteOpen,    setDeleteOpen]    = useState(false);
+  const [deleteError,   setDeleteError]   = useState<string | null>(null);
+  const [loading,       setLoading]       = useState(false);
+  const [pdfLoading,    setPdfLoading]    = useState(false);
 
   const allIds        = contracts.map(c => c.id);
   const allSelected   = selected.size > 0 && selected.size === allIds.length;
@@ -109,9 +107,7 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
   }
 
   function openDeleteModal() {
-    setDeleteHasCharges(false);
-    setDeleteHasPayments(false);
-    setDeleteChargesMsg('');
+    setDeleteError(null);
     setDeleteOpen(true);
   }
 
@@ -136,33 +132,29 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
     }
   }
 
-  async function bulkDelete(force = false) {
+  async function bulkDelete() {
     setLoading(true);
     try {
       const res  = await fetch('/api/contracts/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [...selected], force }),
+        body: JSON.stringify({ ids: [...selected] }),
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.code === 'HAS_PAYMENTS') {
-          setDeleteHasPayments(true);
-          setDeleteChargesMsg(data.error);
-          return;
-        }
-        if (data.code === 'HAS_CHARGES') {
-          setDeleteHasCharges(true);
-          setDeleteChargesMsg(data.error);
-          return;
-        }
-        throw new Error(data.error ?? 'Hata');
+        setDeleteError(data.error ?? 'Hata');
+        return;
       }
-      toast.success(`${data.count} sözleşme silindi`);
+
+      const parts: string[] = [];
+      if (data.deleted  > 0) parts.push(`${data.deleted} sözleşme silindi`);
+      if (data.archived > 0) parts.push(`${data.archived} sözleşme sonlandırıldı (ödeme geçmişi korundu)`);
+      if (data.kept     > 0) parts.push(`${data.kept} kayıt zaten arşivlendi`);
+      toast.success(parts.join(' · ') || 'İşlem tamamlandı');
+
       setSelected(new Set());
       setDeleteOpen(false);
-      setDeleteHasCharges(false);
-      setDeleteHasPayments(false);
+      setDeleteError(null);
       router.refresh();
     } catch (e: unknown) {
       toast.error((e as Error).message);
@@ -357,64 +349,42 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
       {/* ── Delete confirmation ── */}
       <Modal
         open={deleteOpen}
-        onClose={() => { if (!loading) { setDeleteOpen(false); setDeleteHasCharges(false); setDeleteHasPayments(false); } }}
-        title="Sözleşmeleri Sil"
-        width={460}
+        onClose={() => { if (!loading) { setDeleteOpen(false); setDeleteError(null); } }}
+        title="Sözleşmeleri Temizle"
+        width={480}
       >
         <ModalBody>
           <p style={{ fontSize: '0.9375rem', color: 'var(--text)', lineHeight: 1.6 }}>
-            Seçili <strong>{selected.size} sözleşmeyi</strong> silmek üzeresiniz.
+            Seçili <strong>{selected.size} sözleşmede</strong> şu işlem uygulanacak:
           </p>
+          <ul style={{ margin: '10px 0 0', paddingLeft: 20, fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.8 }}>
+            <li>Ödeme kaydı <strong>olmayan</strong> sözleşmeler → <span style={{ color: 'var(--red)' }}>kalıcı olarak silinir</span></li>
+            <li>Ödeme kaydı <strong>olan aktif</strong> sözleşmeler → <span style={{ color: 'var(--amber)' }}>sonlandırılır (mali geçmiş korunur)</span></li>
+            <li>Zaten sonlandırılmış olanlar → <span style={{ color: 'var(--muted)' }}>değiştirilmez</span></li>
+          </ul>
 
-          {deleteHasPayments ? (
+          {deleteError && (
             <div style={{
-              marginTop: 12, padding: '10px 14px', borderRadius: 8,
+              marginTop: 14, padding: '10px 14px', borderRadius: 8,
               background: 'rgba(220,74,74,0.08)', border: '1px solid rgba(220,74,74,0.25)',
             }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--red)', fontWeight: 600, margin: '0 0 4px' }}>
-                Silme engellendi — ödeme geçmişi korunuyor
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>
-                {deleteChargesMsg}
+              <p style={{ fontSize: '0.875rem', color: 'var(--red)', fontWeight: 600, margin: 0 }}>
+                {deleteError}
               </p>
             </div>
-          ) : deleteHasCharges ? (
-            <div style={{
-              marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(220,74,74,0.08)', border: '1px solid rgba(220,74,74,0.25)',
-            }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--red)', fontWeight: 600, margin: '0 0 4px' }}>
-                Bağlı alacak kayıtları var
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>
-                {deleteChargesMsg}
-              </p>
-            </div>
-          ) : (
-            <p style={{ fontSize: '0.875rem', color: 'var(--red)', marginTop: 8, fontWeight: 500 }}>
-              Bu işlem geri alınamaz.
-            </p>
           )}
         </ModalBody>
         <ModalFooter>
           <Btn
             variant="ghost"
-            onClick={() => { setDeleteOpen(false); setDeleteHasCharges(false); setDeleteHasPayments(false); }}
+            onClick={() => { setDeleteOpen(false); setDeleteError(null); }}
             disabled={loading}
           >
-            {deleteHasPayments ? 'Kapat' : 'İptal'}
+            İptal
           </Btn>
-          {!deleteHasPayments && (
-            deleteHasCharges ? (
-              <Btn variant="destructive" onClick={() => bulkDelete(true)} disabled={loading}>
-                {loading ? 'Siliniyor...' : 'Yine de Sil'}
-              </Btn>
-            ) : (
-              <Btn variant="destructive" onClick={() => bulkDelete(false)} disabled={loading}>
-                {loading ? 'Siliniyor...' : 'Evet, Sil'}
-              </Btn>
-            )
-          )}
+          <Btn variant="destructive" onClick={bulkDelete} disabled={loading}>
+            {loading ? 'İşleniyor...' : 'Uygula'}
+          </Btn>
         </ModalFooter>
       </Modal>
     </>

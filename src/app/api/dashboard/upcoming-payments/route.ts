@@ -21,7 +21,6 @@ export async function GET() {
 
     const results = await Promise.all(
       contracts.map(async c => {
-        // Next payment date: this month if paymentDay >= today, else next month
         let nextDate: Date;
         if (c.paymentDay >= todayDay) {
           nextDate = new Date(year, month, c.paymentDay);
@@ -30,10 +29,30 @@ export async function GET() {
         }
 
         const daysUntil = Math.round(
-          (nextDate.getTime() - today.setHours(0, 0, 0, 0)) / 86_400_000,
+          (nextDate.getTime() - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86_400_000,
         );
 
+        if (daysUntil < 0 || daysUntil > 14) return null;
+
+        // Check if a charge exists for this period
+        const periodStart = new Date(nextDate.getFullYear(), nextDate.getMonth(), 1);
+        const periodEnd   = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 1);
+
+        const existingCharge = await prisma.rentCharge.findFirst({
+          where: { contractId: c.id, periodStart: { gte: periodStart, lt: periodEnd } },
+          select: { id: true, status: true, chargeAmount: true, paidAmount: true },
+        });
+
+        // Already handled — exclude from widget
+        if (existingCharge?.status === 'paid' || existingCharge?.status === 'waived') {
+          return null;
+        }
+
         const chargeAmount = await getEffectiveRentAmount(c.id, nextDate);
+        const chargeId     = existingCharge?.id ?? null;
+        const remaining    = existingCharge
+          ? Number(existingCharge.chargeAmount) - Number(existingCharge.paidAmount)
+          : chargeAmount;
 
         return {
           contractId:    c.id,
@@ -44,13 +63,13 @@ export async function GET() {
           nextDate:      nextDate.toISOString().split('T')[0],
           daysUntil,
           chargeAmount,
+          chargeId,
+          remaining,
         };
       }),
     );
 
-    // Return only those due in next 14 days, sorted by soonest first
-    const upcoming = results
-      .filter(r => r.daysUntil >= 0 && r.daysUntil <= 14)
+    const upcoming = (results.filter(Boolean) as NonNullable<typeof results[number]>[])
       .sort((a, b) => a.daysUntil - b.daysUntil);
 
     return NextResponse.json(upcoming);
