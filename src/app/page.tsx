@@ -31,9 +31,9 @@ async function getData() {
     monthlyChargesRaw,    // charges by period — alacak line
     monthlyPaymentsRaw,   // actual payments by paidAt — tahsilat line
   ] = await Promise.all([
-    prisma.unit.count(),
-    prisma.unit.count({ where: { status: 'vacant' } }),
-    prisma.unit.count({ where: { status: 'occupied' } }),
+    prisma.unit.count({ where: { isArchived: false } }),
+    prisma.unit.count({ where: { isArchived: false, status: 'vacant' } }),
+    prisma.unit.count({ where: { isArchived: false, status: 'occupied' } }),
     prisma.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {
@@ -131,7 +131,8 @@ export default async function Dashboard() {
   const fmt = (n: number) => `₺${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const now       = new Date();
-  const monthName = now.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  const TR_MONTHS_LONG = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const monthName = `${TR_MONTHS_LONG[now.getMonth()]} ${now.getFullYear()}`;
   // Collection rate: what % of this month's billed charges have been paid
   const collectPct = d.totalBilled > 0 ? Math.round((d.totalPaidOnBills / d.totalBilled) * 100) : 0;
 

@@ -16,6 +16,7 @@ model Owner {
   nationalId String?    @map("national_id")
   address    String?
   notes      String?
+  isArchived Boolean    @default(false) @map("is_archived")
   createdAt  DateTime   @default(now()) @map("created_at")
   properties Property[]
 
@@ -23,14 +24,15 @@ model Owner {
 }
 
 model Property {
-  id        Int       @id @default(autoincrement())
-  ownerId   Int       @map("owner_id")
-  title     String
-  address   String?
-  city      String?
-  district  String?
-  type      String    @default("apartment")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id         Int       @id @default(autoincrement())
+  ownerId    Int       @map("owner_id")
+  title      String
+  address    String?
+  city       String?
+  district   String?
+  type       String    @default("apartment")
+  isArchived Boolean   @default(false) @map("is_archived")
+  createdAt  DateTime  @default(now()) @map("created_at")
   expenses  Expense[]
   owner     Owner     @relation(fields: [ownerId], references: [id])
   units     Unit[]
@@ -47,6 +49,7 @@ model Unit {
   grossSqm    Float?       @map("gross_sqm")
   netSqm      Float?       @map("net_sqm")
   status      String       @default("vacant")
+  isArchived  Boolean      @default(false) @map("is_archived")
   createdAt   DateTime     @default(now()) @map("created_at")
   contracts   Contract[]
   rentCharges RentCharge[]
@@ -63,6 +66,7 @@ model Tenant {
   nationalId  String?      @map("national_id")
   address     String?
   notes       String?
+  isArchived  Boolean      @default(false) @map("is_archived")
   createdAt   DateTime     @default(now()) @map("created_at")
   contracts   Contract[]
   rentCharges RentCharge[]

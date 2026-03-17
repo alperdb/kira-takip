@@ -46,19 +46,19 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const unit = await prisma.unit.findUnique({
-      where: { id: Number(id) },
-      include: { _count: { select: { contracts: true } } },
+      where:   { id: Number(id) },
+      include: { contracts: { where: { status: 'active' }, take: 1 } },
     });
     if (!unit) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (unit._count.contracts > 0) {
+    if (unit.contracts.length > 0) {
       return NextResponse.json(
-        { error: `Bu daireye ait ${unit._count.contracts} sözleşme var. Silmek için önce sözleşmeleri kaldırın.` },
+        { error: 'Aktif sözleşmesi olan daire arşivlenemez. Önce sözleşmeyi sonlandırın.' },
         { status: 409 },
       );
     }
-    await prisma.unit.delete({ where: { id: Number(id) } });
+    await prisma.unit.update({ where: { id: Number(id) }, data: { isArchived: true } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }

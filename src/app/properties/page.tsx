@@ -79,7 +79,7 @@ export default async function PropertiesPage() {
                 </Td>
                 <Td muted>{date(p.createdAt)}</Td>
                 <Td action>
-                  <DeleteButton endpoint={`/api/properties/${p.id}`} label={p.title} errorAction={{ label: 'Dairelere Git', href: '/units' }} />
+                  <DeleteButton endpoint={`/api/properties/${p.id}`} label={p.title} mode="archive" />
                 </Td>
               </TRow>
             ))}

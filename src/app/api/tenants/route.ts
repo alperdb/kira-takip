@@ -7,15 +7,16 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get('q');
 
     const tenants = await prisma.tenant.findMany({
-      where: q
-        ? {
-            OR: [
-              { name:  { contains: q } },
-              { phone: { contains: q } },
-              { email: { contains: q } },
-            ],
-          }
-        : undefined,
+      where: {
+        isArchived: false,
+        ...(q ? {
+          OR: [
+            { name:  { contains: q } },
+            { phone: { contains: q } },
+            { email: { contains: q } },
+          ],
+        } : {}),
+      },
       include: {
         _count: { select: { contracts: true } },
       },

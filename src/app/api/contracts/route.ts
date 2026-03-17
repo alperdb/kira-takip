@@ -50,7 +50,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kira bedeli sıfırdan büyük olmalı' }, { status: 400 });
     }
 
-    if (paymentDay && (paymentDay < 1 || paymentDay > 28)) {
+    const parsedStart = new Date(startDate);
+    if (isNaN(parsedStart.getTime())) {
+      return NextResponse.json({ error: 'Geçersiz başlangıç tarihi' }, { status: 400 });
+    }
+    if (endDate) {
+      const parsedEnd = new Date(endDate);
+      if (isNaN(parsedEnd.getTime())) {
+        return NextResponse.json({ error: 'Geçersiz bitiş tarihi' }, { status: 400 });
+      }
+      if (parsedEnd < parsedStart) {
+        return NextResponse.json({ error: 'Bitiş tarihi başlangıçtan önce olamaz' }, { status: 400 });
+      }
+    }
+
+    if (paymentDay != null && (Number(paymentDay) < 1 || Number(paymentDay) > 28)) {
       return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
     }
 

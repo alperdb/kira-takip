@@ -75,7 +75,7 @@ export default async function TenantsPage() {
                 </Td>
                 <Td muted>{date(t.createdAt)}</Td>
                 <Td action>
-                  <DeleteButton endpoint={`/api/tenants/${t.id}`} label={t.name} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
+                  <DeleteButton endpoint={`/api/tenants/${t.id}`} label={t.name} mode="archive" />
                 </Td>
               </TRow>
             ))}

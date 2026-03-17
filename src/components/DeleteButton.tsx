@@ -11,16 +11,23 @@ export function DeleteButton({
   onDeleted,
   errorAction,
   warningText,
+  mode = 'delete',
 }: {
   endpoint: string;
   label: string;
   onDeleted?: () => void;
   errorAction?: { label: string; href: string };
   warningText?: string;
+  mode?: 'delete' | 'archive';
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const isArchive   = mode === 'archive';
+  const actionVerb  = isArchive ? 'Arşivle'   : 'Sil';
+  const actionVerbP = isArchive ? 'Arşivlendi' : 'Silindi';
+  const modalTitle  = isArchive ? 'Kaydı Arşivle' : 'Kaydı Sil';
 
   async function handleDelete() {
     setDeleting(true);
@@ -28,9 +35,9 @@ export function DeleteButton({
       const res = await fetch(endpoint, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? 'Silme başarısız');
+        throw new Error(data.error ?? `${actionVerb} başarısız`);
       }
-      toast.success(`${label} silindi`);
+      toast.success(`${label} ${actionVerbP.toLowerCase()}`);
       setOpen(false);
       if (onDeleted) {
         onDeleted();
@@ -53,7 +60,7 @@ export function DeleteButton({
 
   return (
     <>
-      <Tooltip text="Sil" hide={deleting}>
+      <Tooltip text={actionVerb} hide={deleting}>
         <button
           onClick={e => { e.stopPropagation(); setOpen(true); }}
           aria-label={`${label} sil`}
@@ -77,19 +84,19 @@ export function DeleteButton({
         </button>
       </Tooltip>
 
-      <Modal open={open} onClose={() => !deleting && setOpen(false)} title="Kaydı Sil" width={400}>
+      <Modal open={open} onClose={() => !deleting && setOpen(false)} title={modalTitle} width={400}>
         <ModalBody>
           <p style={{ fontSize: '0.9375rem', color: 'var(--text)', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-            <strong>{label}</strong> kaydını kalıcı olarak silmek istediğinizden emin misiniz?
+            <strong>{label}</strong> kaydını {isArchive ? 'arşivlemek' : 'kalıcı olarak silmek'} istediğinizden emin misiniz?
           </p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--red)', marginTop: 8, fontWeight: 500, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-            {warningText ?? 'Bu işlem geri alınamaz.'}
+          <p style={{ fontSize: '0.875rem', color: isArchive ? 'var(--muted)' : 'var(--red)', marginTop: 8, fontWeight: 500, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+            {warningText ?? (isArchive ? 'Arşivlenen kayıtlar listede görünmez ancak veritabanında saklanır.' : 'Bu işlem geri alınamaz.')}
           </p>
         </ModalBody>
         <ModalFooter>
           <Btn variant="ghost" onClick={() => setOpen(false)} disabled={deleting}>İptal</Btn>
           <Btn variant="destructive" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Siliniyor...' : 'Evet, Sil'}
+            {deleting ? `${actionVerb}iyor...` : `Evet, ${actionVerb}`}
           </Btn>
         </ModalFooter>
       </Modal>

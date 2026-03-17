@@ -36,20 +36,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const owner = await prisma.owner.findUnique({
-      where: { id: Number(id) },
-      include: { _count: { select: { properties: true } } },
-    });
+    const owner = await prisma.owner.findUnique({ where: { id: Number(id) } });
     if (!owner) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (owner._count.properties > 0) {
-      return NextResponse.json(
-        { error: `Bu sahibe ait ${owner._count.properties} bina var. Silmek için önce binaları kaldırın.` },
-        { status: 409 },
-      );
-    }
-    await prisma.owner.delete({ where: { id: Number(id) } });
+    await prisma.owner.update({ where: { id: Number(id) }, data: { isArchived: true } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }

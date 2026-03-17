@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import { DeleteButton } from '@/components/DeleteButton';
+import { date } from '@/lib/format';
 
 type Owner = {
   id: number;
@@ -53,9 +54,9 @@ export default function OwnersTable({ owners }: { owners: Owner[] }) {
               {o._count.properties}
             </Badge>
           </Td>
-          <Td muted>{new Date(o.createdAt).toLocaleDateString('tr-TR')}</Td>
+          <Td muted>{date(o.createdAt)}</Td>
           <Td action>
-            <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} errorAction={{ label: 'Binalara Git', href: '/properties' }} />
+            <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} mode="archive" />
           </Td>
         </TRow>
       ))}

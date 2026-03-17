@@ -33,6 +33,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Bitiş tarihi başlangıçtan sonra olmalı' }, { status: 400 });
     }
 
+    if (paymentDay != null && (Number(paymentDay) < 1 || Number(paymentDay) > 28)) {
+      return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
+    }
+
     const old = await prisma.contract.findUnique({ where: { id: contractId } });
     if (!old) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
     if (old.status !== 'active') {

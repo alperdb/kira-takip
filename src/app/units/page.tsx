@@ -87,7 +87,7 @@ export default async function UnitsPage() {
                       : <span style={{ color: 'var(--subtle)' }}>—</span>}
                   </Td>
                   <Td action>
-                    <DeleteButton endpoint={`/api/units/${u.id}`} label={`${u.property.title} — ${u.unitNo}`} errorAction={{ label: 'Sözleşmelere Git', href: '/contracts' }} />
+                    <DeleteButton endpoint={`/api/units/${u.id}`} label={`${u.property.title} — ${u.unitNo}`} mode="archive" />
                   </Td>
                 </TRow>
               );

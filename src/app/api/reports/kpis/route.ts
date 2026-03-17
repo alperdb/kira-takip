@@ -19,6 +19,7 @@ export async function GET() {
       }),
       prisma.unit.groupBy({
         by:      ['status'],
+        where:   { isArchived: false },
         _count:  { _all: true },
       }),
       prisma.rentCharge.count({ where: { status: 'overdue' } }),
