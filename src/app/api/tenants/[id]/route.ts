@@ -43,16 +43,16 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const { id } = await params;
     const tenant = await prisma.tenant.findUnique({
       where:   { id: Number(id) },
-      include: { contracts: { where: { status: 'active' }, take: 1 } },
+      include: { _count: { select: { contracts: true } } },
     });
     if (!tenant) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (tenant.contracts.length > 0) {
+    if (tenant._count.contracts > 0) {
       return NextResponse.json(
-        { error: 'Aktif sözleşmesi olan kiracı arşivlenemez. Önce sözleşmeyi sonlandırın.' },
+        { error: `Bu kiracıya ait ${tenant._count.contracts} sözleşme var. Silmek için önce sözleşmeleri kaldırın.` },
         { status: 409 },
       );
     }
-    await prisma.tenant.update({ where: { id: Number(id) }, data: { isArchived: true } });
+    await prisma.tenant.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

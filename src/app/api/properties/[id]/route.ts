@@ -37,9 +37,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const property = await prisma.property.findUnique({ where: { id: Number(id) } });
+    const property = await prisma.property.findUnique({
+      where: { id: Number(id) },
+      include: { _count: { select: { units: true } } },
+    });
     if (!property) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    await prisma.property.update({ where: { id: Number(id) }, data: { isArchived: true } });
+    if (property._count.units > 0) {
+      return NextResponse.json(
+        { error: `Bu binada ${property._count.units} daire var. Silmek için önce daireleri kaldırın.` },
+        { status: 409 },
+      );
+    }
+    await prisma.property.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db';
 export async function GET() {
   try {
     const owners = await prisma.owner.findMany({
-      where:   { isArchived: false },
       include: { _count: { select: { properties: true } } },
       orderBy: { createdAt: 'desc' },
     });

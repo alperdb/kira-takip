@@ -31,9 +31,9 @@ async function getData() {
     monthlyChargesRaw,    // charges by period — alacak line
     monthlyPaymentsRaw,   // actual payments by paidAt — tahsilat line
   ] = await Promise.all([
-    prisma.unit.count({ where: { isArchived: false } }),
-    prisma.unit.count({ where: { isArchived: false, status: 'vacant' } }),
-    prisma.unit.count({ where: { isArchived: false, status: 'occupied' } }),
+    prisma.unit.count(),
+    prisma.unit.count({ where: { status: 'vacant' } }),
+    prisma.unit.count({ where: { status: 'occupied' } }),
     prisma.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {

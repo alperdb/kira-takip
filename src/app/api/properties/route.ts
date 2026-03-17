@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const ownerId = searchParams.get('owner_id');
 
     const properties = await prisma.property.findMany({
-      where: { isArchived: false, ...(ownerId ? { ownerId: Number(ownerId) } : {}) },
+      where: ownerId ? { ownerId: Number(ownerId) } : undefined,
       include: {
         owner: { select: { id: true, name: true } },
         _count: { select: { units: true } },

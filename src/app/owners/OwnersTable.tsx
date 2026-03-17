@@ -56,7 +56,7 @@ export default function OwnersTable({ owners }: { owners: Owner[] }) {
           </Td>
           <Td muted>{date(o.createdAt)}</Td>
           <Td action>
-            <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} mode="archive" />
+            <DeleteButton endpoint={`/api/owners/${o.id}`} label={o.name} errorAction={{ label: 'Binalara Git', href: '/properties' }} />
           </Td>
         </TRow>
       ))}
