@@ -1,29 +1,37 @@
-# Kira Takip
+# KiraTakip
 
-Rental and property management application for Turkish landlords.
+Desktop property and rent management application built for real estate offices and individual property owners managing multiple rental units.
 
 ## Features
 
-- **Properties & Units** — manage multiple buildings and individual units
-- **Tenants & Contracts** — track lease agreements, renewals, and terminations
-- **Rent Charges & Payments** — generate monthly charges, record payments, monitor overdue accounts
-- **Expenses** — log property expenses and track net income
-- **Reports** — monthly summaries, building income, tenant balances, overdue analysis, payment history
-- **CSV Export** — Excel-compatible exports for all financial data (UTF-8 BOM, semicolon delimiter)
-- **PDF Contracts** — generate signed-ready rental contract PDFs from templates
-- **Exchange Rates** — live TCMB (Turkish Central Bank) rates for multi-currency rent
-- **Dashboard** — KPIs, collection rate, occupancy, 6-month trend charts
+- Property, building, and unit management
+- Tenant management
+- Contract lifecycle tracking
+- Receivable and payment tracking
+- Financial summaries and dashboard KPIs
+- CSV export (Excel-friendly)
+- Contract PDF generation
+- Global search (⌘K)
+- Tenant financial timeline
+- Payment reliability indicator
 
-## Stack
+## Tech Stack
 
-- **Next.js 14** (App Router) + **React 19**
-- **Prisma** ORM + **SQLite** database
-- **Electron** for desktop packaging (Windows / macOS)
-- **Recharts** for charts, **PDFKit** for PDF generation
+- Next.js (App Router)
+- Electron (Desktop)
+- SQLite (local persistent database)
+
+## Highlights
+
+- Clean SaaS-style UI (Apple/Linear inspired)
+- Fully local data storage (no cloud dependency)
+- Consistent financial formatting (TRY)
+- Production-ready export system (CSV + PDF)
+- Stable desktop behavior with persistent database
 
 ## Usage
 
-### Web (development)
+### Development
 
 ```bash
 npm install
@@ -32,18 +40,24 @@ npx prisma db push
 npm run dev        # http://localhost:3001
 ```
 
-### Desktop (Electron)
+### Desktop Build
 
 ```bash
-npm run electron:dev          # development
+npm run electron:dev          # run in Electron (dev)
 npm run electron:build        # production build → dist/
 ```
 
 On first launch the app creates the SQLite database automatically and prompts for initial setup (admin password + office info).
 
-## Database
+## Notes
 
-The database file is stored in the OS user data directory (`app.getPath('userData')`), not in the project folder. It is never committed to the repository.
+- Each installation creates its own local database
+- No test data is included by default
+- Designed for local/offline usage
+
+## Status
+
+Initial public release (v1.0)
 
 ## License
 
