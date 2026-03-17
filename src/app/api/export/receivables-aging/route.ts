@@ -1,21 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('tr-TR');
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2 });
-}
-
-function csvRow(cols: (string | number)[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
+import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 function agingBucket(days: number): string {
-  if (days <= 0)  return 'Vadesi Gelmedi';
   if (days <= 30) return '1–30 gün';
   if (days <= 60) return '31–60 gün';
   if (days <= 90) return '61–90 gün';
@@ -24,10 +11,11 @@ function agingBucket(days: number): string {
 
 export async function GET() {
   try {
+    // Only overdue receivables
     const charges = await prisma.rentCharge.findMany({
-      where: { status: { in: ['overdue', 'pending', 'partial'] } },
+      where: { status: 'overdue' },
       include: {
-        tenant:   { select: { name: true } },
+        tenant:   { select: { name: true, phone: true } },
         unit:     { select: { unitNo: true, property: { select: { title: true } } } },
         contract: { select: { id: true } },
       },
@@ -35,31 +23,28 @@ export async function GET() {
     });
 
     const header = csvRow([
-      'Kiracı', 'Mülk', 'Daire', 'Sözleşme No', 'Dönem',
-      'Vade Tarihi', 'Alacak (₺)', 'Ödenen (₺)', 'Kalan (₺)',
-      'Gecikme (gün)', 'Yaş Grubu', 'Durum',
+      'Kiracı', 'Telefon', 'Mülk', 'Daire', 'Sözleşme No', 'Dönem',
+      'Vade Tarihi', 'Alacak', 'Ödenen', 'Kalan',
+      'Gecikme (gün)', 'Yaş Grubu',
     ]);
 
     const now = Date.now();
     const rows = charges.map(c => {
-      const overdueDays = Math.floor((now - new Date(c.dueDate).getTime()) / 86_400_000);
-      const remaining   = c.chargeAmount - c.paidAmount;
-      const statusMap: Record<string, string> = {
-        partial: 'Kısmi', overdue: 'Gecikti', pending: 'Bekliyor',
-      };
+      const overdueDays = Math.max(1, Math.floor((now - new Date(c.dueDate).getTime()) / 86_400_000));
+      const remaining   = Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount));
       return csvRow([
         c.tenant.name,
+        c.tenant.phone ?? '',
         c.unit.property.title,
         c.unit.unitNo,
         c.contract.id,
         fmtDate(c.periodStart),
         fmtDate(c.dueDate),
-        fmtMoney(c.chargeAmount),
-        fmtMoney(c.paidAmount),
+        fmtMoney(Number(c.chargeAmount)),
+        fmtMoney(Number(c.paidAmount)),
         fmtMoney(remaining),
-        overdueDays > 0 ? overdueDays : 0,
+        overdueDays,
         agingBucket(overdueDays),
-        statusMap[c.status] ?? c.status,
       ]);
     });
 
@@ -67,7 +52,7 @@ export async function GET() {
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="alacak-yaslandirma-${new Date().toISOString().split('T')[0]}.csv"`,
+        'Content-Disposition': `attachment; filename="gecikmiş-alacaklar-${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
   } catch (e: unknown) {

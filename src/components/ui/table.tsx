@@ -13,14 +13,14 @@ export function DataTable({
     <div style={{ overflowX: 'auto' }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
       <thead>
-        <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
+        <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
           {cols.map((c, i) => (
             <th key={i} style={{
-              padding: c.p ?? '10px 24px',
+              padding: c.p ?? '9px 20px',
               textAlign: c.right ? 'right' : c.center ? 'center' : 'left',
-              fontSize: '0.6875rem', fontWeight: 600,
-              color: 'var(--subtle)',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontSize: '0.6875rem', fontWeight: 700,
+              color: 'var(--muted)',
+              textTransform: 'uppercase', letterSpacing: '0.07em',
               whiteSpace: 'nowrap',
               ...(c.w !== undefined ? { width: typeof c.w === 'number' ? `${c.w}px` : c.w } : {}),
             }}>
@@ -36,7 +36,7 @@ export function DataTable({
 }
 
 export function Td({
-  children, right, center, muted, mono, action,
+  children, right, center, muted, mono, action, truncate,
 }: {
   children: ReactNode;
   right?: boolean;
@@ -44,16 +44,19 @@ export function Td({
   muted?: boolean;
   mono?: boolean;
   action?: boolean;
+  truncate?: boolean;
 }) {
   return (
     <td style={{
-      padding: action ? '0 6px' : '14px 24px',
+      padding: action ? '0 16px' : '12px 20px',
       fontSize: '0.875rem',
       color: muted ? 'var(--muted)' : 'var(--text)',
-      textAlign: action ? 'center' : right ? 'right' : center ? 'center' : 'left',
+      textAlign: action ? 'right' : right ? 'right' : center ? 'center' : 'left',
       fontFamily: mono ? 'ui-monospace, monospace' : 'inherit',
       whiteSpace: 'nowrap',
       verticalAlign: 'middle',
+      height: action ? 52 : undefined,
+      ...(truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 0 } : {}),
     }}>
       {children}
     </td>
@@ -70,26 +73,26 @@ export function TRow({
     <tr
       className={`tr-hover${onClick ? ' tr-click' : ''}`}
       onClick={onClick}
-      style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+      style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.08s' }}
     >
       {children}
     </tr>
   );
 }
 
-// ── Compat alias (used by pages not yet migrated) ───────────
+// ── Compat alias ────────────────────────────────────────
 
 export function TableHead({ cols }: { cols: string[] }) {
   return (
     <thead>
-      <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
+      <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
         {cols.map((label, i) => (
           <th key={i} style={{
-            padding: '10px 24px',
+            padding: '9px 20px',
             textAlign: 'left',
-            fontSize: '0.6875rem', fontWeight: 600,
-            color: 'var(--subtle)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
+            fontSize: '0.6875rem', fontWeight: 700,
+            color: 'var(--muted)',
+            textTransform: 'uppercase', letterSpacing: '0.07em',
             whiteSpace: 'nowrap',
           }}>
             {label}
@@ -104,7 +107,7 @@ export function EmptyRow({ cols, msg = 'Henüz kayıt yok.' }: { cols: number; m
   return (
     <tr>
       <td colSpan={cols} style={{
-        padding: '40px 24px', textAlign: 'center',
+        padding: '48px 24px', textAlign: 'center',
         color: 'var(--subtle)', fontSize: '0.875rem',
       }}>
         {msg}

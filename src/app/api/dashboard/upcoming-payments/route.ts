@@ -43,15 +43,19 @@ export async function GET() {
           select: { id: true, status: true, chargeAmount: true, paidAmount: true },
         });
 
-        // Already handled — exclude from widget
-        if (existingCharge?.status === 'paid' || existingCharge?.status === 'waived') {
+        // Already handled or past due — exclude from upcoming widget
+        if (
+          existingCharge?.status === 'paid'    ||
+          existingCharge?.status === 'waived'  ||
+          existingCharge?.status === 'overdue'
+        ) {
           return null;
         }
 
         const chargeAmount = await getEffectiveRentAmount(c.id, nextDate);
         const chargeId     = existingCharge?.id ?? null;
         const remaining    = existingCharge
-          ? Number(existingCharge.chargeAmount) - Number(existingCharge.paidAmount)
+          ? Math.max(0, Number(existingCharge.chargeAmount) - Number(existingCharge.paidAmount))
           : chargeAmount;
 
         return {

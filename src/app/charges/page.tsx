@@ -12,7 +12,7 @@ import {
 } from '@/components/ui';
 import { DeleteButton } from '@/components/DeleteButton';
 import { PaymentModal } from '@/components/PaymentModal';
-import { month } from '@/lib/format';
+import { month, date } from '@/lib/format';
 
 type Charge = {
   id: number; status: string;
@@ -26,15 +26,15 @@ type Charge = {
 };
 
 const COLS = [
-  { label: 'Kiracı'                 },
-  { label: 'Daire'                  },
-  { label: 'Dönem'                  },
-  { label: 'Vade'                   },
-  { label: 'Tutar',    right: true  },
-  { label: 'Ödenen',   right: true  },
-  { label: 'Kalan',    right: true  },
-  { label: 'Durum'                  },
-  { label: '', w: 200               },
+  { label: 'Kiracı'                              },   // flexible
+  { label: 'Daire',      w: 160                  },
+  { label: 'Dönem',      w: 80                   },
+  { label: 'Vade',       w: 96                   },
+  { label: 'Tutar',      right: true,  w: 120    },
+  { label: 'Ödenen',     right: true,  w: 102    },
+  { label: 'Kalan',      right: true,  w: 102    },
+  { label: 'Durum',      w: 90                   },
+  { label: '',           w: 200                  },
 ];
 
 export default function ChargesPage() {
@@ -118,6 +118,7 @@ export default function ChargesPage() {
               <option value="partial">Kısmi Ödendi</option>
               <option value="overdue">Gecikti</option>
               <option value="paid">Ödendi</option>
+              <option value="waived">İptal Edildi</option>
             </select>
             <Btn onClick={generate} disabled={generating}>
               <RefreshCw
@@ -147,14 +148,14 @@ export default function ChargesPage() {
         ) : (
           <DataTable cols={COLS}>
             {charges.map(c => {
-              const balance = Number(c.chargeAmount) - Number(c.paidAmount);
+              const balance = Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount));
               const canPay  = ['pending', 'partial', 'overdue'].includes(c.status);
               return (
                 <TRow key={c.id}>
-                  <Td><span style={{ fontWeight: 600 }}>{c.tenant.name}</span></Td>
-                  <Td muted>{c.unit.property.title} · {c.unit.unitNo}</Td>
+                  <Td truncate><span style={{ fontWeight: 600 }}>{c.tenant.name}</span></Td>
+                  <Td muted truncate>{c.unit.property.title} · {c.unit.unitNo}</Td>
                   <Td muted>{month(c.periodStart)}</Td>
-                  <Td muted>{new Date(c.dueDate).toLocaleDateString('tr-TR')}</Td>
+                  <Td muted>{date(c.dueDate)}</Td>
                   <Td right>
                     {c.chargeAmountTry != null && c.exchangeRate != null ? (
                       <div style={{ textAlign: 'right' }}>

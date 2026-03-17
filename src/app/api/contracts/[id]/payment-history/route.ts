@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
+const TR_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+function fmtMonth(d: Date | string): string {
+  const dt = new Date(d);
+  return `${TR_MONTHS[dt.getMonth()]} ${dt.getFullYear()}`;
+}
+
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -44,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
           method:       p.method,
           referenceNo:  p.referenceNo ?? null,
           notes:        p.notes ?? null,
-          chargePeriod: new Date(charge.periodStart).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }),
+          chargePeriod: fmtMonth(charge.periodStart),
           balanceAfter: Math.max(0, Number(charge.chargeAmount) - running),
         });
       }

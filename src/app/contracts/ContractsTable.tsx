@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FileText, PowerOff, FileDown } from 'lucide-react';
+import { date } from '@/lib/format';
 import {
   Card, DataTable, Td, TRow, EmptyState, Badge, Money,
   Modal, ModalBody, ModalFooter, Btn, toast,
@@ -202,8 +203,8 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
       label: <div style={{ marginTop: 3 }}><CheckBox checked={allSelected} indeterminate={indeterminate} onChange={toggleAll} /></div>,
       w: 48, center: true, p: '10px 0',
     },
-    { label: 'Daire'                           },
-    { label: 'Kiracı'                          },
+    { label: 'Daire',      w: 148                },
+    { label: 'Kiracı'                          },   // flexible
     { label: 'Başlangıç',  w: 104              },
     { label: 'Bitiş',      w: 104              },
     { label: 'Kira / Ay',  right: true, w: 120 },
@@ -234,8 +235,8 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
           >
             {t.label}
             <span style={{
-              padding: '1px 7px', borderRadius: 10, fontSize: '0.75rem',
-              background: tab === t.key ? 'rgba(255,255,255,0.25)' : 'var(--surface2)',
+              padding: '2px 8px', borderRadius: 10, fontSize: '0.75rem',
+              background: tab === t.key ? 'rgba(255,255,255,0.22)' : 'var(--surface2)',
               color:      tab === t.key ? '#fff' : 'var(--muted)',
             }}>
               {t.count}
@@ -306,15 +307,15 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
 
                   {/* Data */}
                   <Td>
-                    <div style={{ fontWeight: 600 }}>{c.unit.unitNo}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{c.unit.property.title}</div>
+                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.unit.unitNo}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.unit.property.title}</div>
                   </Td>
                   <Td>
-                    <div style={{ fontWeight: 500 }}>{c.tenant.name}</div>
+                    <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.tenant.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{c.tenant.phone ?? ''}</div>
                   </Td>
-                  <Td muted>{new Date(c.startDate).toLocaleDateString('tr-TR')}</Td>
-                  <Td muted>{c.endDate ? new Date(c.endDate).toLocaleDateString('tr-TR') : '—'}</Td>
+                  <Td muted>{date(c.startDate)}</Td>
+                  <Td muted>{date(c.endDate)}</Td>
                   <Td right><Money amount={Number(c.currentRent ?? c.rentAmount)} /></Td>
                   <Td right>
                     {Number(c.depositAmount) > 0
@@ -335,6 +336,8 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
                           contractId={c.id}
                           currentRent={Number(c.currentRent ?? c.rentAmount)}
                           currentEndDate={endStr}
+                          currentDeposit={Number(c.depositAmount)}
+                          currentPaymentDay={c.paymentDay}
                           label={`${c.unit.unitNo} — ${c.tenant.name}`}
                         />
                       </div>
@@ -408,7 +411,7 @@ export function ContractsTable({ contracts, allUnits, tenants }: Props) {
           {deleteError && (
             <div style={{
               marginTop: 14, padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(220,74,74,0.08)', border: '1px solid rgba(220,74,74,0.25)',
+              background: 'var(--red-bg)', border: '1px solid rgba(255,69,58,0.25)',
             }}>
               <p style={{ fontSize: '0.875rem', color: 'var(--red)', fontWeight: 600, margin: 0 }}>
                 {deleteError}

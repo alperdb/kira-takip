@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Card, DataTable, Td, TRow, TableSkeleton } from '@/components/ui';
+import { fmtDate, fmtMoney, csvRow as csvRowUtil } from '@/lib/csv';
 
 type PaymentRow = {
   id:          number;
@@ -63,9 +64,9 @@ export function PaymentHistoryTab() {
   const total = rows.reduce((s, r) => s + r.amount, 0);
 
   function exportCsv() {
-    const header = ['"Tarih";"Kiracı";"Mülk";"Daire";"Yöntem";"Referans";"Tutar (₺)";"Alacak No";"Sözleşme No"'].join('');
+    const header = csvRowUtil(['Tarih', 'Kiracı', 'Mülk', 'Daire', 'Yöntem', 'Referans', 'Tutar', 'Alacak No', 'Sözleşme No']);
     const body   = rows.map(r =>
-      `"${new Date(r.paidAt).toLocaleDateString('tr-TR')}";"${r.tenantName}";"${r.property}";"${r.unit}";"${r.method}";"${r.referenceNo ?? ''}";"${r.amount.toFixed(2)}";"${r.chargeId}";"${r.contractId}"`
+      csvRowUtil([fmtDate(r.paidAt), r.tenantName, r.property, r.unit, r.method, r.referenceNo ?? '', fmtMoney(r.amount), r.chargeId, r.contractId])
     );
     const csv = '\uFEFF' + [header, ...body].join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

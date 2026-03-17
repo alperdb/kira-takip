@@ -10,10 +10,12 @@ import {
 } from '@/components/ui';
 
 type Props = {
-  contractId:     number;
-  currentRent:    number;
-  currentEndDate: string | null;
-  label:          string; // e.g. "Daire 3 — Kiracı Adı"
+  contractId:        number;
+  currentRent:       number;
+  currentEndDate:    string | null;
+  currentDeposit:    number;
+  currentPaymentDay: number;
+  label:             string; // e.g. "Daire 3 — Kiracı Adı"
 };
 
 function addOneYear(dateStr: string): string {
@@ -22,22 +24,26 @@ function addOneYear(dateStr: string): string {
   return d.toISOString().split('T')[0];
 }
 
-export function ContractRenewModal({ contractId, currentRent, currentEndDate, label }: Props) {
+export function ContractRenewModal({ contractId, currentRent, currentEndDate, currentDeposit, currentPaymentDay, label }: Props) {
   const router = useRouter();
 
   const defaultStart = currentEndDate
     ? new Date(new Date(currentEndDate).getTime() + 86_400_000).toISOString().split('T')[0]
     : new Date().toISOString().split('T')[0];
 
-  const [open,         setOpen]         = useState(false);
-  const [step,         setStep]         = useState<'form' | 'preview'>('form');
-  const [newStartDate, setNewStartDate] = useState(defaultStart);
-  const [newEndDate,   setNewEndDate]   = useState(addOneYear(defaultStart));
-  const [newRent,      setNewRent]      = useState(String(currentRent));
-  const [loading,      setLoading]      = useState(false);
-  const [apiError,     setApiError]     = useState('');
+  const [open,           setOpen]           = useState(false);
+  const [step,           setStep]           = useState<'form' | 'preview'>('form');
+  const [newStartDate,   setNewStartDate]   = useState(defaultStart);
+  const [newEndDate,     setNewEndDate]     = useState(addOneYear(defaultStart));
+  const [newRent,        setNewRent]        = useState(String(currentRent));
+  const [newDeposit,     setNewDeposit]     = useState(String(currentDeposit));
+  const [newPaymentDay,  setNewPaymentDay]  = useState(String(currentPaymentDay));
+  const [loading,        setLoading]        = useState(false);
+  const [apiError,       setApiError]       = useState('');
 
-  const rentNum = parseFloat(newRent) || 0;
+  const rentNum       = parseFloat(newRent)       || 0;
+  const depositNum    = parseFloat(newDeposit)    || 0;
+  const paymentDayNum = parseInt(newPaymentDay)   || 1;
 
   function handleOpen() {
     setStep('form');
@@ -45,6 +51,8 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
     setNewStartDate(defaultStart);
     setNewEndDate(addOneYear(defaultStart));
     setNewRent(String(currentRent));
+    setNewDeposit(String(currentDeposit));
+    setNewPaymentDay(String(currentPaymentDay));
     setOpen(true);
   }
 
@@ -57,8 +65,10 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           newStartDate,
-          newEndDate: newEndDate || null,
-          newRent:    rentNum,
+          newEndDate:    newEndDate || null,
+          newRent:       rentNum,
+          depositAmount: depositNum,
+          paymentDay:    paymentDayNum,
         }),
       });
       if (!res.ok) {
@@ -129,18 +139,38 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
                 </Field>
               </FieldRow>
 
-              <Field label="Yeni Kira (₺)" required>
+              <FieldRow>
+                <Field label="Yeni Kira (₺)" required>
+                  <NumberInput
+                    value={newRent}
+                    onChange={e => setNewRent(e.target.value)}
+                    min={1}
+                    step={1}
+                  />
+                </Field>
+                <Field label="Ödeme Günü (1–28)">
+                  <NumberInput
+                    value={newPaymentDay}
+                    onChange={e => setNewPaymentDay(e.target.value)}
+                    min={1}
+                    max={28}
+                    step={1}
+                  />
+                </Field>
+              </FieldRow>
+
+              <Field label="Depozito (₺)">
                 <NumberInput
-                  value={newRent}
-                  onChange={e => setNewRent(e.target.value)}
-                  min={1}
+                  value={newDeposit}
+                  onChange={e => setNewDeposit(e.target.value)}
+                  min={0}
                   step={1}
                 />
               </Field>
 
               <div style={{
                 marginTop: 12, padding: '10px 14px', borderRadius: 8,
-                background: 'rgba(196,112,74,0.08)', border: '1px solid var(--primary-ring)',
+                background: 'var(--primary-bg)', border: '1px solid var(--primary-ring)',
                 fontSize: '0.8125rem', color: 'var(--muted)',
               }}>
                 Mevcut sözleşme kapatılacak, yeni sözleşme oluşturulacak.
@@ -164,10 +194,12 @@ export function ContractRenewModal({ contractId, currentRent, currentEndDate, la
             <ModalBody>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                 {[
-                  { label: 'Yeni Başlangıç', value: new Date(newStartDate).toLocaleDateString('tr-TR'), hi: true },
+                  { label: 'Yeni Başlangıç', value: new Date(newStartDate).toLocaleDateString('tr-TR'), hi: true  },
                   { label: 'Yeni Bitiş',     value: newEndDate ? new Date(newEndDate).toLocaleDateString('tr-TR') : 'Belirsiz', hi: false },
-                  { label: 'Eski Kira',       value: `₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hi: false },
-                  { label: 'Yeni Kira',       value: `₺${rentNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hi: true },
+                  { label: 'Eski Kira',       value: `₺${currentRent.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,  hi: false },
+                  { label: 'Yeni Kira',       value: `₺${rentNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,       hi: true  },
+                  { label: 'Depozito',        value: `₺${depositNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,    hi: false },
+                  { label: 'Ödeme Günü',      value: `Her ayın ${paymentDayNum}. günü`,                                                                   hi: false },
                 ].map(row => (
                   <div key={row.label} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

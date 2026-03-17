@@ -506,7 +506,7 @@ function ActionButton({
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '12px 14px', borderRadius: 10, width: '100%',
           background: done ? 'var(--green-bg)' : 'var(--surface2)',
-          border: `1px solid ${done ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`,
+          border: `1px solid ${done ? 'rgba(48,209,88,0.2)' : 'var(--border)'}`,
           color: done ? 'var(--green)' : 'var(--text)',
           cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1,
@@ -515,7 +515,7 @@ function ActionButton({
       >
         <div style={{
           width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-          background: done ? 'rgba(34,197,94,0.12)' : 'var(--border)',
+          background: done ? 'var(--green-bg)' : 'var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {done

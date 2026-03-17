@@ -2,50 +2,50 @@
 
 /* ── Design tokens (dark-first) ─────────────────────── */
 :root {
-  /* Surfaces */
-  --bg:       #0F172A;
-  --surface:  #1E293B;
-  --surface2: #0F172A;
-  --sidebar:  #111827;
+  /* Surfaces — near-black Apple/Linear palette */
+  --bg:       #0B0B0C;
+  --surface:  #111113;
+  --surface2: #1A1A1D;
+  --sidebar:  #0D0D0F;
 
-  /* Borders */
-  --border:   #334155;
-  --border-s: #475569;
+  /* Borders — subtle, prefer inset highlights over heavy borders */
+  --border:   #222226;
+  --border-s: #3A3A3E;
 
   /* Text */
-  --text:   #E2E8F0;
-  --muted:  #94A3B8;
-  --subtle: #64748B;
+  --text:   #F5F5F7;
+  --muted:  #8E8E93;
+  --subtle: #636366;
 
-  /* Primary */
-  --primary:      #3B82F6;
-  --primary-h:    #2563EB;
-  --primary-bg:   rgba(59,130,246,0.12);
-  --primary-ring: rgba(59,130,246,0.28);
+  /* Primary / Accent */
+  --primary:      #4F8CFF;
+  --primary-h:    #3A7FFF;
+  --primary-bg:   rgba(79,140,255,0.12);
+  --primary-ring: rgba(79,140,255,0.28);
 
   /* Status */
-  --green:  #22C55E; --green-bg:  rgba(34,197,94,0.12);
-  --red:    #EF4444; --red-bg:    rgba(239,68,68,0.12);
-  --amber:  #F59E0B; --amber-bg:  rgba(245,158,11,0.12);
-  --gray:   #94A3B8; --gray-bg:   rgba(100,116,139,0.12);
+  --green:  #30D158; --green-bg:  rgba(48,209,88,0.12);
+  --red:    #FF453A; --red-bg:    rgba(255,69,58,0.12);
+  --amber:  #FFD60A; --amber-bg:  rgba(255,214,10,0.10);
+  --gray:   #8E8E93; --gray-bg:   rgba(142,142,147,0.12);
 
-  /* Shadows */
-  --shadow-card:  0 1px 2px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
-  --shadow-modal: 0 8px 32px rgba(0,0,0,0.5), 0 32px 64px rgba(0,0,0,0.4);
+  /* Shadows — inset highlight gives premium glass feel */
+  --shadow-card:  0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 3px rgba(0,0,0,0.6);
+  --shadow-modal: 0 0 0 1px rgba(255,255,255,0.07), 0 24px 48px rgba(0,0,0,0.7);
 }
 
 /* ── Light mode override ─────────────────────────────── */
 [data-theme="light"] {
-  --bg:       #F8FAFC; --surface:  #FFFFFF; --surface2: #F8FAFC;
+  --bg:       #F5F7FA; --surface:  #FFFFFF; --surface2: #F2F2F7;
   --sidebar:  #FFFFFF;
   --border:   #E2E8F0; --border-s: #CBD5E1;
   --text:     #0F172A; --muted:    #64748B; --subtle: #94A3B8;
-  --primary:      #2563EB; --primary-h: #1D4ED8;
-  --primary-bg:   #EFF6FF; --primary-ring: #BFDBFE;
-  --green:  #16A34A; --green-bg:  #F0FDF4;
-  --red:    #DC2626; --red-bg:    #FEF2F2;
-  --amber:  #D97706; --amber-bg:  #FFFBEB;
-  --gray:   #64748B; --gray-bg:   #F1F5F9;
+  --primary:      #3B7FFF; --primary-h: #2563EB;
+  --primary-bg:   rgba(59,127,255,0.1); --primary-ring: rgba(59,127,255,0.25);
+  --green:  #1DB954; --green-bg:  rgba(29,185,84,0.1);
+  --red:    #FF3B30; --red-bg:    rgba(255,59,48,0.1);
+  --amber:  #D97706; --amber-bg:  rgba(217,119,6,0.1);
+  --gray:   #6E6E73; --gray-bg:   rgba(110,110,115,0.1);
   --shadow-card:  0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
   --shadow-modal: 0 20px 60px rgba(15,23,42,0.12);
 }
@@ -65,6 +65,7 @@ body {
   font-family: var(--font-inter), -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+  font-feature-settings: 'cv02', 'cv03', 'cv11';
 }
 
 /* ── Form elements ───────────────────────────────────── */
@@ -72,10 +73,10 @@ input, select, textarea {
   font-family: inherit;
   font-size: 0.875rem;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 13px;
+  border-radius: 8px;
+  padding: 8px 12px;
   width: 100%;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -84,15 +85,24 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-ring);
 }
+/* Suppress the generic outline ring for form elements — box-shadow handles it */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--subtle);
+}
+
+/* ── Labels ──────────────────────────────────────────── */
 label {
   display: block;
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--muted);
-  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
 }
 
-/* ── Focus-visible ring ──────────────────────────────── */
+/* ── Focus-visible ring (non-form elements) ──────────── */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -101,32 +111,38 @@ label {
 :focus:not(:focus-visible) { outline: none; }
 
 /* ── Table row hover ─────────────────────────────────── */
-.tr-hover:hover { background: var(--surface2); }
+.tr-hover:hover { background: rgba(255,255,255,0.025); }
 .tr-click { cursor: pointer; }
 
 /* ── Sidebar nav links ───────────────────────────────── */
 .sidebar-link {
   display: flex; align-items: center; gap: 9px;
-  padding: 7px 9px; border-radius: 8px;
+  padding: 8px 10px; border-radius: 8px;
   font-size: 0.875rem; font-weight: 400;
   color: var(--muted); background: transparent;
   text-decoration: none; position: relative;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.12s, color 0.12s;
   white-space: nowrap; overflow: hidden;
 }
 .sidebar-link:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+[data-theme="light"] .sidebar-link:hover { background: var(--surface2); color: var(--text); }
 .sidebar-link.active {
-  background: rgba(59,130,246,0.1);
+  background: var(--primary-bg);
   color: var(--primary);
   font-weight: 600;
-  /* Left accent bar */
-  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 /* ── Toast animations ────────────────────────────────── */
-@keyframes toast-in  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toast-in  { from { opacity:0; transform:translateY(8px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes toast-out { from { opacity:1; transform:translateY(0);   } to { opacity:0; transform:translateY(6px); } }
-.toast-item { animation: toast-in 0.2s ease forwards; }
+.toast-item { animation: toast-in 0.18s ease forwards; }
+
+/* ── Modal entrance ──────────────────────────────────── */
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+.modal-panel { animation: modal-in 0.18s ease forwards; }
 
 /* ── Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -135,7 +151,7 @@ label {
 
 /* ── Large screen spacing ────────────────────────────── */
 @media (min-width: 1600px) {
-  .content-wrapper { padding: 28px 48px !important; gap: 24px !important; }
+  .content-wrapper { padding: 24px 48px !important; gap: 20px !important; }
 }
 
 /* ── Print ───────────────────────────────────────────── */
@@ -153,12 +169,13 @@ label {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── KPI card hover lift ─────────────────────────────── */
-.kpi-card { transition: box-shadow 0.15s ease; }
-.kpi-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.kpi-card { transition: box-shadow 0.18s ease, transform 0.18s ease; }
+.kpi-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset; transform: translateY(-2px); }
+[data-theme="light"] .kpi-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,0.12); }
 
 /* ── Skeleton shimmer ────────────────────────────────── */
 @keyframes skeleton-shimmer {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.45; }
 }
-.skeleton { background: var(--surface2); animation: skeleton-shimmer 1.6s ease-in-out infinite; }
+.skeleton { background: var(--surface2); animation: skeleton-shimmer 1.5s ease-in-out infinite; }

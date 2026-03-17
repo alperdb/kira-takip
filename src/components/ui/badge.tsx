@@ -1,11 +1,11 @@
 export type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral' | 'info';
 
-const V: Record<BadgeVariant, { color: string; bg: string }> = {
-  success: { color: 'var(--green)',   bg: 'var(--green-bg)'   },
-  warning: { color: 'var(--amber)',   bg: 'var(--amber-bg)'   },
-  danger:  { color: 'var(--red)',     bg: 'var(--red-bg)'     },
-  neutral: { color: 'var(--gray)',    bg: 'var(--gray-bg)'    },
-  info:    { color: 'var(--primary)', bg: 'var(--primary-bg)' },
+const V: Record<BadgeVariant, { color: string; bg: string; border: string }> = {
+  success: { color: 'var(--green)',   bg: 'var(--green-bg)',   border: 'rgba(48,209,88,0.25)'   },
+  warning: { color: 'var(--amber)',   bg: 'var(--amber-bg)',   border: 'rgba(255,214,10,0.2)'   },
+  danger:  { color: 'var(--red)',     bg: 'var(--red-bg)',     border: 'rgba(255,69,58,0.25)'   },
+  neutral: { color: 'var(--muted)',   bg: 'var(--gray-bg)',    border: 'transparent'            },
+  info:    { color: 'var(--primary)', bg: 'var(--primary-bg)', border: 'rgba(79,140,255,0.25)'  },
 };
 
 // Status string → variant + label
@@ -29,7 +29,7 @@ export function Badge({
   children,
 }: {
   variant?: BadgeVariant;
-  status?: string;        // backward-compat: derives variant + label from status string
+  status?: string;
   children?: React.ReactNode;
 }) {
   let resolvedVariant: BadgeVariant = variant ?? 'neutral';
@@ -45,9 +45,11 @@ export function Badge({
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center',
-      padding: '2px 10px', borderRadius: 9999,
-      fontSize: '0.75rem', fontWeight: 500,
+      padding: '2px 9px', borderRadius: 9999,
+      fontSize: '0.6875rem', fontWeight: 600,
+      letterSpacing: '0.01em',
       color: s.color, background: s.bg,
+      border: `1px solid ${s.border}`,
       whiteSpace: 'nowrap', lineHeight: '1.6',
     }}>
       {content}

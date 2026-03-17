@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Card, Badge } from '@/components/ui';
 import { PaymentHistoryCard } from '@/components/PaymentHistoryCard';
-import { ArrowLeft, Phone, Mail, CreditCard, MapPin, FileText, TrendingUp } from 'lucide-react';
+import { TenantTimeline } from '@/components/TenantTimeline';
+import { ArrowLeft, Phone, Mail, CreditCard, MapPin, FileText } from 'lucide-react';
 import { initial, date } from '@/lib/format';
 
 const tryCurrency = (n: number) =>
@@ -29,7 +30,11 @@ export default async function TenantDetailPage({ params }: Params) {
   if (!tenant) notFound();
 
   const financials = await prisma.rentCharge.aggregate({
-    where: { tenantId: tenant.id, status: { not: 'waived' } },
+    where: {
+      tenantId: tenant.id,
+      status:   { not: 'waived' },
+      contract: { status: { not: 'terminated' } },
+    },
     _sum: { chargeAmount: true, paidAmount: true },
   });
 
@@ -56,7 +61,7 @@ export default async function TenantDetailPage({ params }: Params) {
       </div>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '8px 0 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '8px 0 16px' }}>
         <div style={{
           width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
           background: 'var(--primary-bg)', color: 'var(--primary)',
@@ -77,34 +82,36 @@ export default async function TenantDetailPage({ params }: Params) {
         </div>
       </div>
 
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        <KpiCard
+          label="Toplam Alacak"
+          value={tryCurrency(totalCharged)}
+          valueColor="var(--text)"
+        />
+        <KpiCard
+          label="Toplam Tahsilat"
+          value={tryCurrency(totalPaid)}
+          valueColor="var(--green)"
+        />
+        <KpiCard
+          label="Bakiye"
+          value={tryCurrency(balance)}
+          valueColor={balance > 0.005 ? 'var(--red)' : 'var(--green)'}
+          hint={balance > 0.005 ? 'Ödenmemiş tutar' : 'Tamamı ödendi'}
+        />
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, alignItems: 'start' }}>
 
-        {/* Sol: Ödeme geçmişi */}
-        <PaymentHistoryCard endpoint={`/api/tenants/${tenant.id}/payment-history`} />
+        {/* Sol: Ödeme geçmişi + Zaman çizelgesi */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <PaymentHistoryCard endpoint={`/api/tenants/${tenant.id}/payment-history`} />
+          <TenantTimeline tenantId={tenant.id} />
+        </div>
 
         {/* Sağ: Bilgi kartları */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Finansal Özet */}
-          <Card style={{ padding: '20px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <TrendingUp size={14} color="var(--muted)" />
-              <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0, color: 'var(--text)' }}>
-                Finansal Özet
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <FinRow label="Toplam Alacak" value={tryCurrency(totalCharged)} color="var(--text)" />
-              <FinRow label="Toplam Tahsilat" value={tryCurrency(totalPaid)} color="var(--green)" />
-              <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
-              <FinRow
-                label="Bakiye"
-                value={tryCurrency(balance)}
-                color={balance > 0 ? 'var(--red)' : 'var(--green)'}
-                bold
-              />
-            </div>
-          </Card>
 
           {/* Kişisel bilgiler */}
           <Card style={{ padding: '20px 24px' }}>
@@ -196,17 +203,30 @@ export default async function TenantDetailPage({ params }: Params) {
   );
 }
 
-function FinRow({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
+function KpiCard({ label, value, valueColor, hint }: {
+  label:      string;
+  value:      string;
+  valueColor: string;
+  hint?:      string;
+}) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}>
-      <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{label}</span>
-      <span style={{
-        fontSize: '0.8125rem', fontFamily: 'ui-monospace, monospace',
-        fontWeight: bold ? 700 : 600, color: color ?? 'var(--text)',
+    <Card style={{ padding: '14px 18px' }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted)', marginBottom: 6 }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: '1.125rem', fontWeight: 700,
+        fontFamily: 'ui-monospace, monospace',
+        color: valueColor, letterSpacing: '-0.01em',
       }}>
         {value}
-      </span>
-    </div>
+      </div>
+      {hint && (
+        <div style={{ fontSize: '0.6875rem', color: 'var(--subtle)', marginTop: 4 }}>
+          {hint}
+        </div>
+      )}
+    </Card>
   );
 }
 

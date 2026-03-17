@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
   try {
     const { propertyId, unitId, category, amount, date, description } = await req.json();
 
-    if (!amount || !date) {
-      return NextResponse.json({ error: 'amount ve date zorunlu' }, { status: 400 });
+    if (!amount || Number(amount) <= 0 || !date) {
+      return NextResponse.json({ error: 'Geçerli bir tutar ve tarih zorunlu' }, { status: 400 });
     }
 
     const expense = await prisma.expense.create({

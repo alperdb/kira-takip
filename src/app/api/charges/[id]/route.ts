@@ -54,8 +54,22 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const { id }  = await params;
-    const { notes } = await req.json();
-    const charge  = await prisma.rentCharge.update({
+    const body = await req.json().catch(() => ({}));
+    const { notes } = body;
+
+    const existing = await prisma.rentCharge.findUnique({ where: { id: Number(id) } });
+    if (!existing) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+    if (existing.status === 'paid') {
+      return NextResponse.json({ error: 'Ödenmiş alacaklar iptal edilemez' }, { status: 409 });
+    }
+    if (Number(existing.paidAmount) > 0) {
+      return NextResponse.json(
+        { error: 'Kısmi ödeme yapılmış alacaklar iptal edilemez. Önce ödemeleri geri alın.' },
+        { status: 409 },
+      );
+    }
+
+    const charge = await prisma.rentCharge.update({
       where: { id: Number(id) },
       data:  { status: 'waived', notes },
     });

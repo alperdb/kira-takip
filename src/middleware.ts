@@ -7,6 +7,7 @@ export function middleware(req: NextRequest) {
   // Public paths — no auth needed
   if (
     pathname.startsWith('/login') ||
+    pathname.startsWith('/setup') ||
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon')

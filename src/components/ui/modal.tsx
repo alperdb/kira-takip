@@ -19,7 +19,7 @@ export function Modal({
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)',
+        background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
       }}
@@ -27,8 +27,9 @@ export function Modal({
       onMouseUp={e => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) onClose(); }}
     >
       <div
+        className="modal-panel"
         style={{
-          background: 'var(--surface)', borderRadius: 20,
+          background: 'var(--surface)', borderRadius: 16,
           width: '100%', maxWidth: width,
           boxShadow: 'var(--shadow-modal)',
           border: '1px solid var(--border)',
@@ -42,26 +43,26 @@ export function Modal({
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 24px', flexShrink: 0,
+          padding: '18px 24px', flexShrink: 0,
+          borderBottom: '1px solid var(--border)',
         }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)', margin: 0 }}>
+          <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text)', margin: 0, letterSpacing: '-0.01em' }}>
             {title}
           </h2>
           <button
             onClick={onClose}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--subtle)', padding: 4, borderRadius: 6,
+              color: 'var(--subtle)', padding: 5, borderRadius: 6,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'color 0.1s',
+              transition: 'background 0.1s, color 0.1s', flexShrink: 0,
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--muted)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--subtle)'; }}
+            onMouseEnter={e => { const el = e.currentTarget; el.style.background = 'var(--surface2)'; el.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { const el = e.currentTarget; el.style.background = 'none'; el.style.color = 'var(--subtle)'; }}
           >
-            <X size={18} />
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
-        <div style={{ height: 1, background: 'var(--border)', flexShrink: 0 }} />
         {children}
       </div>
     </div>
@@ -72,11 +73,11 @@ export function ModalBody({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       padding: '20px 24px',
-      display: 'flex', flexDirection: 'column', gap: 14,
+      display: 'flex', flexDirection: 'column', gap: 16,
       overflowY: 'auto', overflowX: 'hidden', flex: 1,
       minWidth: 0,
       wordBreak: 'break-word',
-      overflowWrap: 'anywhere',
+      overflowWrap: 'break-word',
       whiteSpace: 'normal',
     }}>
       {children}
@@ -87,10 +88,10 @@ export function ModalBody({ children }: { children: React.ReactNode }) {
 export function ModalFooter({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      padding: '16px 24px',
+      padding: '14px 24px',
       borderTop: '1px solid var(--border)',
-      display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap',
-      flexShrink: 0,
+      display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap',
+      flexShrink: 0, background: 'var(--surface)',
     }}>
       {children}
     </div>

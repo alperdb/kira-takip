@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
     });
 
     const alerts = charges.map((c) => {
-      const unpaidAmount = Math.round((c.chargeAmount - c.paidAmount) * 100) / 100;
+      const unpaidAmount = Math.round(Math.max(0, c.chargeAmount - c.paidAmount) * 100) / 100;
       const daysLate = Math.floor(
         (now.getTime() - c.dueDate.getTime()) / (1000 * 60 * 60 * 24),
       );

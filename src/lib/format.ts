@@ -16,19 +16,28 @@ export function money(
   return `${currency}${_num.format(Number(amount))}`;
 }
 
-/** 15.03.2026 */
-export function date(d: Date | string): string {
-  return _date.format(new Date(d));
+/** 15.03.2026 — returns '—' for missing or invalid input */
+export function date(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return _date.format(dt);
 }
 
-/** 15 Mart 2026 */
-export function dateLong(d: Date | string): string {
-  return _long.format(new Date(d));
+/** 15 Mart 2026 — returns '—' for missing or invalid input */
+export function dateLong(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return _long.format(dt);
 }
 
-/** Mar 2026 */
-export function month(d: Date | string): string {
-  return _mon.format(new Date(d));
+/** Mar 2026 — returns '—' for missing or invalid input */
+export function month(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return _mon.format(dt);
 }
 
 /** First initial uppercase — for avatar fallbacks */

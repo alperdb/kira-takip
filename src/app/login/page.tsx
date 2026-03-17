@@ -1,15 +1,34 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
   const router   = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [username,  setUsername]  = useState('');
+  const [password,  setPassword]  = useState('');
+  const [error,     setError]     = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [checking,  setChecking]  = useState(true);
+
+  // Redirect to setup if no admin account exists yet
+  useEffect(() => {
+    fetch('/api/auth/setup-status')
+      .then(r => r.json())
+      .then(d => { if (d.needsSetup) router.replace('/setup'); else setChecking(false); })
+      .catch(() => setChecking(false));
+  }, [router]);
+
+  if (checking) return (
+    <div style={{
+      position: 'fixed', inset: 0, display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg)',
+    }}>
+      <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', animation: 'spin 0.7s linear infinite' }} />
+    </div>
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -76,12 +95,7 @@ export default function LoginPage() {
 
             {/* Username */}
             <div>
-              <label style={{
-                display: 'block', fontSize: '0.8125rem', fontWeight: 600,
-                color: 'var(--text)', marginBottom: 6,
-              }}>
-                Kullanıcı Adı
-              </label>
+              <label style={{ marginBottom: 6 }}>Kullanıcı Adı</label>
               <div style={{ position: 'relative' }}>
                 <User
                   size={15}
@@ -98,12 +112,9 @@ export default function LoginPage() {
                   autoComplete="username"
                   required
                   style={{
-                    width: '100%', paddingLeft: 34, paddingRight: 12,
-                    paddingTop: 9, paddingBottom: 9,
+                    paddingLeft: 34, paddingRight: 12, paddingTop: 9, paddingBottom: 9,
                     border: `1px solid ${error ? 'var(--red)' : 'var(--border)'}`,
-                    borderRadius: 8, fontSize: '0.9375rem',
-                    background: 'var(--surface)', color: 'var(--text)',
-                    outline: 'none', boxSizing: 'border-box',
+                    fontSize: '0.9375rem',
                   }}
                 />
               </div>
@@ -111,12 +122,7 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label style={{
-                display: 'block', fontSize: '0.8125rem', fontWeight: 600,
-                color: 'var(--text)', marginBottom: 6,
-              }}>
-                Şifre
-              </label>
+              <label style={{ marginBottom: 6 }}>Şifre</label>
               <div style={{ position: 'relative' }}>
                 <Lock
                   size={15}
@@ -133,12 +139,9 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   style={{
-                    width: '100%', paddingLeft: 34, paddingRight: 12,
-                    paddingTop: 9, paddingBottom: 9,
+                    paddingLeft: 34, paddingRight: 12, paddingTop: 9, paddingBottom: 9,
                     border: `1px solid ${error ? 'var(--red)' : 'var(--border)'}`,
-                    borderRadius: 8, fontSize: '0.9375rem',
-                    background: 'var(--surface)', color: 'var(--text)',
-                    outline: 'none', boxSizing: 'border-box',
+                    fontSize: '0.9375rem',
                   }}
                 />
               </div>
@@ -149,7 +152,7 @@ export default function LoginPage() {
               <div style={{
                 padding: '9px 13px', borderRadius: 8,
                 background: 'var(--red-bg)',
-                border: '1px solid rgba(239,68,68,0.25)',
+                border: '1px solid rgba(255,69,58,0.25)',
                 fontSize: '0.8125rem', color: 'var(--red)', fontWeight: 500,
               }}>
                 {error}
@@ -175,13 +178,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Default credentials hint */}
-        <p style={{
-          textAlign: 'center', fontSize: '0.75rem',
-          color: 'var(--subtle)', marginTop: 16,
-        }}>
-          Varsayılan: admin / admin123
-        </p>
       </div>
     </div>
   );

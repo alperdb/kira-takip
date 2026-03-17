@@ -47,7 +47,7 @@ export function RecentPayments() {
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>En son 8 tahsilat</p>
         </div>
         <Link
-          href="/reports?tab=3"
+          href="/reports?tab=4"
           style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}
         >
           Tümünü Gör →
@@ -73,13 +73,13 @@ export function RecentPayments() {
             <p style={{ fontSize: '0.8125rem', color: 'var(--subtle)', margin: 0 }}>Henüz ödeme kaydı yok</p>
           </div>
         ) : (
-          payments.map(p => (
+          payments.map((p, i) => (
             <div
               key={p.id}
               style={{
                 padding: '9px 24px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                borderBottom: '1px solid var(--border)',
+                borderBottom: i < payments.length - 1 ? '1px solid var(--border)' : 'none',
                 transition: 'background 0.1s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface2)')}

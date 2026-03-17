@@ -1,5 +1,6 @@
 import { prisma } from './db';
 import { getRate } from './tcmb';
+import { computeChargeStatus } from './chargeStatus';
 
 // ─── Kira artış hesabı (pure — ayrı dosyada, buradan re-export) ─
 export { calcRentIncrease } from './rentCalc';
@@ -103,6 +104,7 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
 // ─── Gecikme durumunu güncelle ───────────────────────────────
 export async function updateOverdueStatuses(graceDays = 5): Promise<number> {
   const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
   cutoff.setDate(cutoff.getDate() - graceDays);
 
   const result = await prisma.rentCharge.updateMany({
@@ -139,7 +141,9 @@ export async function applyPayment(
   for (const charge of openCharges) {
     if (remaining <= 0) break;
 
-    const owed   = Number(charge.chargeAmount) - Number(charge.paidAmount);
+    const owed   = Math.max(0, Number(charge.chargeAmount) - Number(charge.paidAmount));
+    if (owed === 0) continue; // stale status — skip silently
+
     const paying = Math.min(remaining, owed);
 
     await prisma.payment.create({
@@ -153,12 +157,8 @@ export async function applyPayment(
       },
     });
 
-    const newPaid = Number(charge.paidAmount) + paying;
-    const isPastDue = new Date() > new Date(charge.dueDate);
-    const newStatus =
-      newPaid >= Number(charge.chargeAmount) ? 'paid'
-      : isPastDue                            ? 'overdue'
-      :                                        'partial';
+    const newPaid   = Number(charge.paidAmount) + paying;
+    const newStatus = computeChargeStatus(newPaid, Number(charge.chargeAmount), charge.dueDate);
     await prisma.rentCharge.update({
       where: { id: charge.id },
       data: {

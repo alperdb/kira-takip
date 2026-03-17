@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Geçersiz ID' }, { status: 400 });
     }
 
-    const { newStartDate, newEndDate, newRent, depositAmount } = await req.json();
+    const { newStartDate, newEndDate, newRent, depositAmount, paymentDay } = await req.json();
 
     if (!newStartDate) {
       return NextResponse.json({ error: 'newStartDate zorunlu' }, { status: 400 });
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           rentAmount,
           currentRent:   rentAmount,
           currency:      old.currency,
-          paymentDay:    old.paymentDay,
+          paymentDay:    paymentDay != null ? Number(paymentDay) : old.paymentDay,
           depositAmount: depositAmount != null ? Number(depositAmount) : old.depositAmount,
           depositStatus: old.depositStatus,
           status:        'active',

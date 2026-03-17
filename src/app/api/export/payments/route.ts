@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('tr-TR');
-}
-
-function fmtMoney(n: number | { toString(): string }): string {
-  return `₺${Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
-}
-
-function csvRow(cols: string[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
+import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 const METHOD_LABELS: Record<string, string> = {
   bank:  'Banka',
@@ -45,7 +33,10 @@ export async function GET() {
     ]);
 
     const rows = payments.map(p => {
-      const period = `${fmtDate(p.rentCharge.periodStart)} – ${fmtDate(p.rentCharge.periodEnd)}`;
+      const periodEnd = fmtDate(p.rentCharge.periodEnd);
+      const period    = periodEnd
+        ? `${fmtDate(p.rentCharge.periodStart)} – ${periodEnd}`
+        : fmtDate(p.rentCharge.periodStart);
       return csvRow([
         String(p.id),
         String(p.rentCharge.contract.id),

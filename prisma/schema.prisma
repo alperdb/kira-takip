@@ -8,7 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── 1. OWNERS ───────────────────────────────────────────────
 model Owner {
   id         Int        @id @default(autoincrement())
   name       String
@@ -18,159 +17,143 @@ model Owner {
   address    String?
   notes      String?
   createdAt  DateTime   @default(now()) @map("created_at")
-
   properties Property[]
 
   @@map("owners")
 }
 
-// ─── 2. PROPERTIES ───────────────────────────────────────────
 model Property {
-  id        Int      @id @default(autoincrement())
-  ownerId   Int      @map("owner_id")
+  id        Int       @id @default(autoincrement())
+  ownerId   Int       @map("owner_id")
   title     String
   address   String?
   city      String?
   district  String?
-  type      String   @default("apartment")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  owner    Owner      @relation(fields: [ownerId], references: [id])
-  units    Unit[]
-  expenses Expense[]
+  type      String    @default("apartment")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expenses  Expense[]
+  owner     Owner     @relation(fields: [ownerId], references: [id])
+  units     Unit[]
 
   @@map("properties")
 }
 
-// ─── 3. UNITS ────────────────────────────────────────────────
 model Unit {
-  id         Int      @id @default(autoincrement())
-  propertyId Int      @map("property_id")
-  unitNo     String   @map("unit_no")
-  floor      Int?
-  type       String   @default("residential")
-  grossSqm   Float?   @map("gross_sqm")
-  netSqm     Float?   @map("net_sqm")
-  status     String   @default("vacant")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  property    Property     @relation(fields: [propertyId], references: [id])
+  id          Int          @id @default(autoincrement())
+  propertyId  Int          @map("property_id")
+  unitNo      String       @map("unit_no")
+  floor       Int?
+  type        String       @default("residential")
+  grossSqm    Float?       @map("gross_sqm")
+  netSqm      Float?       @map("net_sqm")
+  status      String       @default("vacant")
+  createdAt   DateTime     @default(now()) @map("created_at")
   contracts   Contract[]
   rentCharges RentCharge[]
+  property    Property     @relation(fields: [propertyId], references: [id])
 
   @@map("units")
 }
 
-// ─── 4. TENANTS ──────────────────────────────────────────────
 model Tenant {
-  id         Int      @id @default(autoincrement())
-  name       String
-  phone      String?
-  email      String?
-  nationalId String?  @map("national_id")
-  address    String?
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
-
+  id          Int          @id @default(autoincrement())
+  name        String
+  phone       String?
+  email       String?
+  nationalId  String?      @map("national_id")
+  address     String?
+  notes       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
   contracts   Contract[]
   rentCharges RentCharge[]
 
   @@map("tenants")
 }
 
-// ─── 5. CONTRACTS ────────────────────────────────────────────
 model Contract {
-  id                Int      @id @default(autoincrement())
-  unitId            Int      @map("unit_id")
-  tenantId          Int      @map("tenant_id")
-  startDate         DateTime @map("start_date")
-  endDate           DateTime? @map("end_date")
-  rentAmount        Float    @map("rent_amount")
-  currency          String   @default("TRY")
-  paymentDay        Int      @default(1) @map("payment_day")
-  depositAmount     Float    @default(0) @map("deposit_amount")
-  depositStatus     String   @default("held") @map("deposit_status")
-  depositDate       DateTime? @map("deposit_date")
-  status            String   @default("active")
-  currentRent       Float?   @map("current_rent")
-  terminationDate   DateTime? @map("termination_date")
-  terminationReason String?  @map("termination_reason")
-  bankName          String?  @map("bank_name")
-  iban              String?  @map("iban")
-  accountHolder     String?  @map("account_holder")
-  createdAt         DateTime @default(now()) @map("created_at")
-
-  unit                Unit                  @relation(fields: [unitId], references: [id])
-  tenant              Tenant                @relation(fields: [tenantId], references: [id])
+  id                  Int                  @id @default(autoincrement())
+  unitId              Int                  @map("unit_id")
+  tenantId            Int                  @map("tenant_id")
+  startDate           DateTime             @map("start_date")
+  endDate             DateTime?            @map("end_date")
+  rentAmount          Float                @map("rent_amount")
+  currency            String               @default("TRY")
+  paymentDay          Int                  @default(1) @map("payment_day")
+  depositAmount       Float                @default(0) @map("deposit_amount")
+  depositStatus       String               @default("held") @map("deposit_status")
+  depositDate         DateTime?            @map("deposit_date")
+  status              String               @default("active")
+  terminationDate     DateTime?            @map("termination_date")
+  terminationReason   String?              @map("termination_reason")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  currentRent         Float?               @map("current_rent")
+  accountHolder       String?              @map("account_holder")
+  bankName            String?              @map("bank_name")
+  iban                String?              @map("iban")
   increases           ContractIncrease[]
-  rentCharges         RentCharge[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  unit                Unit                 @relation(fields: [unitId], references: [id])
   depositTransactions DepositTransaction[]
+  rentCharges         RentCharge[]
 
   @@map("contracts")
 }
 
-// ─── 6. CONTRACT_INCREASES ───────────────────────────────────
 model ContractIncrease {
-  id            Int      @id @default(autoincrement())
-  contractId      Int      @map("contract_id")
-  effectiveDate   DateTime @map("effective_date")
-  oldAmount       Float    @map("old_amount")
-  increaseAmount  Float?   @map("increase_amount")
-  newAmount       Float    @map("new_amount")
-  reason          String?
-  increaseType    String   @default("manual") @map("increase_type")
-  ratePercent     Float?   @map("rate_percent")
-  notes           String?
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  contract Contract @relation(fields: [contractId], references: [id])
+  id             Int      @id @default(autoincrement())
+  contractId     Int      @map("contract_id")
+  effectiveDate  DateTime @map("effective_date")
+  oldAmount      Float    @map("old_amount")
+  newAmount      Float    @map("new_amount")
+  reason         String?
+  increaseType   String   @default("manual") @map("increase_type")
+  ratePercent    Float?   @map("rate_percent")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  increaseAmount Float?   @map("increase_amount")
+  contract       Contract @relation(fields: [contractId], references: [id])
 
   @@map("contract_increases")
 }
 
-// ─── 7. RENT_CHARGES ─────────────────────────────────────────
 model RentCharge {
-  id            Int      @id @default(autoincrement())
-  contractId    Int      @map("contract_id")
-  unitId        Int      @map("unit_id")
-  tenantId      Int      @map("tenant_id")
-  dueDate       DateTime @map("due_date")
-  chargeAmount  Float    @map("charge_amount")
-  paidAmount    Float    @default(0) @map("paid_amount")
-  periodStart   DateTime @map("period_start")
-  periodEnd     DateTime @map("period_end")
-  status        String   @default("pending")
-  notes            String?
-  exchangeRate     Float?   @map("exchange_rate")
-  chargeAmountTry  Float?   @map("charge_amount_try")
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  contract Contract  @relation(fields: [contractId], references: [id])
-  unit     Unit      @relation(fields: [unitId], references: [id])
-  tenant   Tenant    @relation(fields: [tenantId], references: [id])
-  payments Payment[]
+  id              Int       @id @default(autoincrement())
+  contractId      Int       @map("contract_id")
+  unitId          Int       @map("unit_id")
+  tenantId        Int       @map("tenant_id")
+  dueDate         DateTime  @map("due_date")
+  chargeAmount    Float     @map("charge_amount")
+  paidAmount      Float     @default(0) @map("paid_amount")
+  periodStart     DateTime  @map("period_start")
+  periodEnd       DateTime  @map("period_end")
+  status          String    @default("pending")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  chargeAmountTry Float?    @map("charge_amount_try")
+  exchangeRate    Float?    @map("exchange_rate")
+  payments        Payment[]
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  unit            Unit      @relation(fields: [unitId], references: [id])
+  contract        Contract  @relation(fields: [contractId], references: [id])
 
   @@unique([contractId, periodStart])
   @@map("rent_charges")
 }
 
-// ─── 8. PAYMENTS ─────────────────────────────────────────────
 model Payment {
-  id           Int      @id @default(autoincrement())
-  rentChargeId Int      @map("rent_charge_id")
+  id           Int        @id @default(autoincrement())
+  rentChargeId Int        @map("rent_charge_id")
   amount       Float
-  paidAt       DateTime @map("paid_at")
-  method       String   @default("cash")
-  referenceNo  String?  @map("reference_no")
+  paidAt       DateTime   @map("paid_at")
+  method       String     @default("cash")
+  referenceNo  String?    @map("reference_no")
   notes        String?
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  rentCharge RentCharge @relation(fields: [rentChargeId], references: [id])
+  createdAt    DateTime   @default(now()) @map("created_at")
+  rentCharge   RentCharge @relation(fields: [rentChargeId], references: [id])
 
   @@map("payments")
 }
 
-// ─── 9. DEPOSIT_TRANSACTIONS ─────────────────────────────────
 model DepositTransaction {
   id         Int      @id @default(autoincrement())
   contractId Int      @map("contract_id")
@@ -179,54 +162,46 @@ model DepositTransaction {
   date       DateTime
   notes      String?
   createdAt  DateTime @default(now()) @map("created_at")
-
-  contract Contract @relation(fields: [contractId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id])
 
   @@map("deposit_transactions")
 }
 
-// ─── 10. EXPENSES ────────────────────────────────────────────
 model Expense {
-  id          Int      @id @default(autoincrement())
-  propertyId  Int?     @map("property_id")
-  unitId      Int?     @map("unit_id")
+  id          Int       @id @default(autoincrement())
+  propertyId  Int?      @map("property_id")
+  unitId      Int?      @map("unit_id")
   category    String?
   amount      Float
   date        DateTime
   description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  property Property? @relation(fields: [propertyId], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  property    Property? @relation(fields: [propertyId], references: [id])
 
   @@map("expenses")
 }
 
-// ─── 12. USERS ───────────────────────────────────────────────
 model User {
   id           Int       @id @default(autoincrement())
   username     String    @unique
   passwordHash String    @map("password_hash")
   role         String    @default("admin")
   createdAt    DateTime  @default(now()) @map("created_at")
-
-  sessions Session[]
+  sessions     Session[]
 
   @@map("users")
 }
 
-// ─── 13. SESSIONS ────────────────────────────────────────────
 model Session {
   id        String   @id
   userId    Int      @map("user_id")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("sessions")
 }
 
-// ─── 11. EXCHANGE_RATES ──────────────────────────────────────
 model ExchangeRate {
   id          Int      @id @default(autoincrement())
   date        DateTime

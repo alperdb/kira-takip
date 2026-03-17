@@ -47,7 +47,7 @@ export function PaymentHistoryCard({ endpoint }: { endpoint: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{
           width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-          background: 'rgba(34,197,94,0.12)',
+          background: 'var(--green-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <History size={14} color="var(--green)" strokeWidth={2.5} />
@@ -77,7 +77,7 @@ export function PaymentHistoryCard({ endpoint }: { endpoint: string }) {
         <p style={{ fontSize: '0.875rem', color: 'var(--subtle)', margin: 0 }}>Yükleniyor...</p>
       ) : rows.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0' }}>
-          <CheckCircle2 size={28} color="var(--border)" strokeWidth={1.5} />
+          <CheckCircle2 size={28} color="var(--subtle)" strokeWidth={1.5} />
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: 0 }}>
             Henüz ödeme kaydı yok.
           </p>

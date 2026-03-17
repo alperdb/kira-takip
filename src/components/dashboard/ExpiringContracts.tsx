@@ -81,7 +81,7 @@ export function ExpiringContracts() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{
           width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-          background: 'rgba(239,68,68,0.12)',
+          background: 'var(--red-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <FileWarning size={14} color="var(--red)" strokeWidth={2.5} />
@@ -100,7 +100,7 @@ export function ExpiringContracts() {
             padding: '2px 8px', borderRadius: 20,
             fontSize: '0.6875rem', fontWeight: 600,
             background: 'var(--red-bg)', color: 'var(--red)',
-            border: '1px solid rgba(239,68,68,0.2)',
+            border: '1px solid rgba(255,69,58,0.2)',
           }}>
             {items.length}
           </span>

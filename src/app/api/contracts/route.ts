@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (Number(rentAmount) <= 0) {
+      return NextResponse.json({ error: 'Kira bedeli sıfırdan büyük olmalı' }, { status: 400 });
+    }
 
     if (paymentDay && (paymentDay < 1 || paymentDay > 28)) {
       return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });

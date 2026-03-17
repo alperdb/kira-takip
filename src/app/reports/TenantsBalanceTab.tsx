@@ -4,20 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, DataTable, Td, TRow, TableSkeleton, Badge } from '@/components/ui';
 
 type TenantRow = {
-  id:           number;
-  name:         string;
-  totalCharged: number;
-  totalPaid:    number;
-  balance:      number;
-  hasOverdue:   boolean;
+  id:              number;
+  name:            string;
+  totalCharged:    number;
+  totalPaid:       number;
+  balance:         number;
+  hasOverdue:      boolean;
+  reliabilityRate: number;
 };
 
 const COLS = [
-  { label: 'Kiracı'                        },
-  { label: 'Toplam Alacak',  right: true  },
-  { label: 'Ödenen',         right: true  },
-  { label: 'Kalan Borç',     right: true  },
-  { label: 'Durum',          right: false },
+  { label: 'Kiracı'                                  },   // flexible
+  { label: 'Toplam Alacak', right: true,  w: 128    },
+  { label: 'Ödenen',        right: true,  w: 110    },
+  { label: 'Kalan Borç',    right: true,  w: 110    },
+  { label: 'Güvenilirlik',  right: false, w: 120    },
+  { label: 'Durum',         right: false, w: 88     },
 ];
 
 const fmt = (n: number) =>
@@ -101,13 +103,16 @@ export function TenantsBalanceTab() {
           <DataTable cols={COLS}>
             {rows.map(r => (
               <TRow key={r.id}>
-                <Td><span style={{ fontWeight: 600 }}>{r.name}</span></Td>
+                <Td truncate><span style={{ fontWeight: 600 }}>{r.name}</span></Td>
                 <Td right><span style={{ fontFamily: 'ui-monospace, monospace' }}>{fmt(r.totalCharged)}</span></Td>
                 <Td right><span style={{ fontFamily: 'ui-monospace, monospace', color: 'var(--green)', fontWeight: 600 }}>{fmt(r.totalPaid)}</span></Td>
                 <Td right>
                   {r.balance > 0.01
                     ? <span style={{ fontFamily: 'ui-monospace, monospace', color: 'var(--red)', fontWeight: 700 }}>{fmt(r.balance)}</span>
                     : <span style={{ color: 'var(--subtle)' }}>—</span>}
+                </Td>
+                <Td>
+                  <ReliabilityBar rate={r.reliabilityRate} />
                 </Td>
                 <Td>
                   <Badge status={r.hasOverdue ? 'overdue' : r.balance > 0.01 ? 'partial' : 'paid'} />
@@ -117,6 +122,31 @@ export function TenantsBalanceTab() {
           </DataTable>
         )}
       </Card>
+    </div>
+  );
+}
+
+function ReliabilityBar({ rate }: { rate: number }) {
+  const color = rate >= 90 ? 'var(--green)' : rate >= 70 ? 'var(--amber)' : 'var(--red)';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{
+        width: 60, height: 5, borderRadius: 3,
+        background: 'var(--surface2)', overflow: 'hidden', flexShrink: 0,
+      }}>
+        <div style={{
+          width: `${rate}%`, height: '100%',
+          background: color, borderRadius: 3,
+          transition: 'width 0.3s',
+        }} />
+      </div>
+      <span style={{
+        fontSize: '0.75rem', fontWeight: 700,
+        color, fontFamily: 'ui-monospace, monospace',
+        minWidth: 32,
+      }}>
+        %{rate}
+      </span>
     </div>
   );
 }

@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('tr-TR');
-}
-
-function fmtCurrency(n: number | { toString(): string }, cur = 'TRY'): string {
-  return `${Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${cur}`;
-}
-
-function csvRow(cols: string[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
+import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 export async function GET() {
   try {
@@ -40,9 +28,9 @@ export async function GET() {
         c.tenant.email ?? '',
         fmtDate(c.startDate),
         fmtDate(c.endDate),
-        fmtCurrency(c.rentAmount, c.currency),
+        fmtMoney(Number(c.rentAmount)),
         c.currency,
-        fmtCurrency(c.depositAmount, c.currency),
+        fmtMoney(Number(c.depositAmount)),
         String(c.paymentDay),
         c.status === 'active' ? 'Aktif' : c.status === 'terminated' ? 'Sonlandırıldı' : c.status === 'expired' ? 'Süresi Doldu' : c.status,
       ])

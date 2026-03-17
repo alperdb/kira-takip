@@ -34,33 +34,34 @@ function getStandaloneAppDir() {
   return standaloneBase; // fallback
 }
 
-// ── Init schema using Prisma binary engine (no ABI issues) ─
-async function initDatabase(dbPath) {
-  if (fs.existsSync(dbPath)) return;   // DB already exists — skip
-
-  const dir = path.dirname(dbPath);
-  fs.mkdirSync(dir, { recursive: true });
-
-  const isDev = !app.isPackaged;
-
-  // Resolve @prisma/client and its query engine binary.
-  // In packaged app, we load from the standalone's node_modules.
+// ── Resolve Prisma query engine binary path (always call before spawning Next.js) ──
+function resolvePrismaEnginePath(isDev) {
   const standaloneAppDir = isDev ? null : getStandaloneAppDir();
   const nodeModulesBase  = isDev
     ? path.join(__dirname, '..', 'node_modules')
     : path.join(standaloneAppDir, 'node_modules');
 
-  const clientDir  = path.join(nodeModulesBase, '@prisma', 'client');
   const enginesDir = path.join(nodeModulesBase, '@prisma', 'engines');
-
-  // Find the query-engine binary (e.g. query-engine-windows.exe)
   if (fs.existsSync(enginesDir)) {
     const bin = fs.readdirSync(enginesDir).find(f =>
       f.startsWith('query-engine') &&
       (process.platform === 'win32' ? f.endsWith('.exe') : !f.includes('.'))
     );
-    if (bin) process.env.PRISMA_QUERY_ENGINE_BINARY = path.join(enginesDir, bin);
+    if (bin) {
+      process.env.PRISMA_QUERY_ENGINE_BINARY = path.join(enginesDir, bin);
+    }
   }
+  return nodeModulesBase;
+}
+
+// ── Init schema using Prisma binary engine (no ABI issues) ─
+async function initDatabase(dbPath, nodeModulesBase) {
+  if (fs.existsSync(dbPath)) return;   // DB already exists — skip
+
+  const dir = path.dirname(dbPath);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const clientDir = path.join(nodeModulesBase, '@prisma', 'client');
 
   process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, '/')}`;
 
@@ -88,7 +89,7 @@ async function initDatabase(dbPath) {
 }
 
 // ── Wait until Next.js server is ready ────────────────────
-function waitForServer(url, retries = 30) {
+function waitForServer(url, retries = 60) {
   return new Promise((resolve, reject) => {
     let tries = 0;
     const check = () => {
@@ -124,6 +125,8 @@ function createWindow() {
 
   win.loadURL(DEV_URL);
   win.once('ready-to-show', () => win.show());
+  // Fallback: force-show after 6s if ready-to-show never fires (e.g. render crash)
+  setTimeout(() => { if (win && !win.isVisible()) win.show(); }, 6000);
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) shell.openExternal(url);
@@ -145,7 +148,11 @@ app.whenReady().then(async () => {
   const isDev  = !app.isPackaged;
   const dbPath = getDbPath();
 
-  await initDatabase(dbPath);
+  // Resolve Prisma engine path first — must happen before initDatabase AND before
+  // spawning the Next.js server, regardless of whether the DB already exists.
+  const nodeModulesBase = resolvePrismaEnginePath(isDev);
+
+  await initDatabase(dbPath, nodeModulesBase);
 
   const dbUrl = `file:${dbPath.replace(/\\/g, '/')}`;
 

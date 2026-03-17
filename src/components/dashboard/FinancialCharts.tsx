@@ -98,7 +98,7 @@ export function FinancialCharts() {
   const hasOverdue = !loading && !!data && data.overdueByBuilding.length > 0;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
 
       {/* ── Income by Property ── */}
       <Card>

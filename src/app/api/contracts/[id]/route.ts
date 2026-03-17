@@ -42,14 +42,27 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (paymentDay !== undefined && (Number(paymentDay) < 1 || Number(paymentDay) > 28)) {
       return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
     }
-    if (startDate && endDate && endDate <= startDate) {
+    if (rentAmount !== undefined && Number(rentAmount) <= 0) {
+      return NextResponse.json({ error: 'Kira bedeli sıfırdan büyük olmalı' }, { status: 400 });
+    }
+    if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
       return NextResponse.json({ error: 'Bitiş tarihi başlangıçtan sonra olmalı' }, { status: 400 });
     }
 
-    // If unit is changing, update unit statuses
+    // If unit is changing, check for conflicts and update unit statuses
     if (unitId !== undefined) {
       const current = await prisma.contract.findUnique({ where: { id: contractId }, select: { unitId: true } });
       if (current && current.unitId !== Number(unitId)) {
+        // Prevent moving to a unit that already has an active contract
+        const conflict = await prisma.contract.findFirst({
+          where: { unitId: Number(unitId), status: 'active', id: { not: contractId } },
+        });
+        if (conflict) {
+          return NextResponse.json(
+            { error: `Hedef dairede zaten aktif sözleşme var (id: ${conflict.id})` },
+            { status: 409 },
+          );
+        }
         await prisma.$transaction([
           prisma.unit.update({ where: { id: current.unitId }, data: { status: 'vacant' } }),
           prisma.unit.update({ where: { id: Number(unitId) }, data: { status: 'occupied' } }),
@@ -122,11 +135,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
 
     // Safe cascade: charges have no payments, delete charges → increases/deposits → contract
-    const chargeIds = (await prisma.rentCharge.findMany({
-      where:  { contractId },
-      select: { id: true },
-    })).map(c => c.id);
-
     await prisma.$transaction([
       prisma.rentCharge.deleteMany({ where: { contractId } }),
       prisma.contractIncrease.deleteMany({ where: { contractId } }),

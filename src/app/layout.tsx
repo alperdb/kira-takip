@@ -38,10 +38,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="content-wrapper" style={{
               maxWidth: 1400,
               margin: '0 auto',
-              padding: '24px 32px',
+              padding: '20px 32px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 20,
+              gap: 16,
             }}>
               {children}
             </div>

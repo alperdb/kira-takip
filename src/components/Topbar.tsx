@@ -2,7 +2,9 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Settings, LogOut, User, ChevronDown, Moon, Sun } from 'lucide-react';
+import { ChevronRight, Settings, LogOut, User, ChevronDown, Moon, Sun, Bell, AlertCircle, Clock, FileWarning } from 'lucide-react';
+import Link from 'next/link';
+import { GlobalSearch } from './GlobalSearch';
 
 const LABELS: Record<string, string> = {
   '/':           'Dashboard',
@@ -12,6 +14,7 @@ const LABELS: Record<string, string> = {
   '/tenants':    'Kiracılar',
   '/contracts':  'Sözleşmeler',
   '/charges':    'Alacaklar',
+  '/payments':   'Ödemeler',
   '/expenses':   'Giderler',
   '/reports':    'Raporlar',
   '/settings':   'Ayarlar',
@@ -43,6 +46,159 @@ function useTheme() {
   }
 
   return { dark, toggle };
+}
+
+// ── Notification bell ──────────────────────────────────
+type Notification = {
+  id: string;
+  type: 'overdue' | 'upcoming' | 'expiring';
+  title: string;
+  body: string;
+  date: string;
+  href: string;
+};
+
+function NotificationBell() {
+  const [open,  setOpen]  = useState(false);
+  const [items, setItems] = useState<Notification[]>([]);
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/notifications');
+        if (!res.ok) return;
+        const d = await res.json();
+        if (cancelled) return;
+        setItems(d.notifications ?? []);
+        setCount(d.count ?? 0);
+      } catch { /* ignore */ }
+    }
+    load();
+    const t = setInterval(load, 60_000); // refresh every minute
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (e.button !== 0) return;
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  const TYPE_META = {
+    overdue:  { icon: AlertCircle,  color: 'var(--red)',   bg: 'var(--red-bg)'   },
+    upcoming: { icon: Clock,        color: 'var(--amber)', bg: 'var(--amber-bg)' },
+    expiring: { icon: FileWarning,  color: 'var(--primary)', bg: 'var(--primary-bg)' },
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          position: 'relative',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 36, height: 36, borderRadius: 8,
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'var(--muted)',
+          transition: 'background 0.1s, color 0.1s',
+        }}
+        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'var(--surface2)'; el.style.color = 'var(--text)'; }}
+        onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'none'; el.style.color = 'var(--muted)'; }}
+        title="Bildirimler"
+      >
+        <Bell size={17} strokeWidth={2} />
+        {count > 0 && (
+          <span style={{
+            position: 'absolute', top: 4, right: 4,
+            width: 16, height: 16, borderRadius: '50%',
+            background: 'var(--red)', color: '#fff',
+            fontSize: '0.625rem', fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1,
+          }}>
+            {count > 9 ? '9+' : count}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          width: 340,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 12, boxShadow: 'var(--shadow-modal)',
+          overflow: 'hidden', zIndex: 100,
+        }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>Bildirimler</span>
+            {count > 0 && (
+              <span style={{
+                background: 'var(--red-bg)', color: 'var(--red)',
+                fontSize: '0.75rem', fontWeight: 600,
+                padding: '2px 8px', borderRadius: 20,
+              }}>
+                {count}
+              </span>
+            )}
+          </div>
+
+          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+            {items.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.875rem' }}>
+                Bildirim yok
+              </div>
+            ) : (
+              items.map(n => {
+                const meta = TYPE_META[n.type];
+                const IconComp = meta.icon;
+                return (
+                  <Link
+                    key={n.id}
+                    href={n.href}
+                    onClick={() => setOpen(false)}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 12,
+                      padding: '12px 16px',
+                      borderBottom: '1px solid var(--border)',
+                      textDecoration: 'none',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <div style={{
+                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                      background: meta.bg, color: meta.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <IconComp size={14} strokeWidth={2} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+                        {n.title}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {n.body}
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--subtle)', marginTop: 2 }}>
+                        {new Date(n.date).toLocaleDateString('tr-TR')}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── User dropdown ──────────────────────────────────────
@@ -90,7 +246,7 @@ function UserDropdown() {
           color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700,
           userSelect: 'none', flexShrink: 0,
         }}>
-          A
+          {username.charAt(0).toUpperCase()}
         </div>
         <ChevronDown
           size={12}
@@ -106,7 +262,7 @@ function UserDropdown() {
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
           width: 200,
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+          borderRadius: 12, boxShadow: 'var(--shadow-modal)',
           overflow: 'hidden', zIndex: 100,
         }}>
           {/* User info */}
@@ -175,7 +331,7 @@ export function Topbar() {
   const label    = matchLabel(pathname);
   const isRoot   = pathname === '/';
 
-  if (pathname === '/login') return null;
+  if (pathname === '/login' || pathname === '/setup') return null;
 
   return (
     <header style={{
@@ -200,6 +356,8 @@ export function Topbar() {
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <GlobalSearch />
+        <NotificationBell />
         <UserDropdown />
       </div>
     </header>

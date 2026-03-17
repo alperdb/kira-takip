@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Download, BarChart3, ChevronDown } from 'lucide-react';
+import { Download, BarChart3, ChevronDown, TrendingUp, TrendingDown, Building2, AlertCircle } from 'lucide-react';
 import {
   Card, PageHeader, Btn, DataTable, Td, TRow, TableSkeleton,
 } from '@/components/ui';
-import { BuildingIncomeTab  } from './BuildingIncomeTab';
-import { TenantsBalanceTab  } from './TenantsBalanceTab';
-import { PaymentHistoryTab  } from './PaymentHistoryTab';
+import { csvRow as csvRowUtil, fmtMoney } from '@/lib/csv';
+import { BuildingIncomeTab   } from './BuildingIncomeTab';
+import { TenantsBalanceTab   } from './TenantsBalanceTab';
+import { PaymentHistoryTab   } from './PaymentHistoryTab';
+import { OverdueTenantsTab   } from './OverdueTenantsTab';
 
 type Row = {
   key:      string;
@@ -24,7 +26,99 @@ type Report = {
   totals: { alacak: number; tahsilat: number; gider: number; net: number };
 };
 
-const TABS = ['Aylık Özet', 'Bina Gelirleri', 'Kiracı Bakiyeleri', 'Ödeme Geçmişi'];
+const TABS = ['Aylık Özet', 'Bina Gelirleri', 'Kiracı Bakiyeleri', 'Gecikmiş Alacaklar', 'Ödeme Geçmişi'];
+
+// ── Summary KPIs ──────────────────────────────────────────────
+type Kpis = {
+  year:          number;
+  totalIncome:   number;
+  totalExpenses: number;
+  netIncome:     number;
+  totalUnits:    number;
+  occupiedUnits: number;
+  occupancyRate: number;
+  overdueCount:  number;
+};
+
+function SummaryKpis() {
+  const [kpis, setKpis] = useState<Kpis | null>(null);
+
+  useEffect(() => {
+    fetch('/api/reports/kpis')
+      .then(r => r.ok ? r.json() : null)
+      .then(setKpis)
+      .catch(() => {});
+  }, []);
+
+  if (!kpis) return null;
+
+  const fmtK = (n: number) =>
+    `₺${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const items = [
+    {
+      label:  `${kpis.year} Tahsilat`,
+      value:  fmtK(kpis.totalIncome),
+      color:  'var(--green)',
+      icon:   TrendingUp,
+    },
+    {
+      label:  `${kpis.year} Gider`,
+      value:  fmtK(kpis.totalExpenses),
+      color:  'var(--red)',
+      icon:   TrendingDown,
+    },
+    {
+      label:  `${kpis.year} Net Gelir`,
+      value:  (kpis.netIncome < 0 ? '−' : '') + fmtK(Math.abs(kpis.netIncome)),
+      color:  kpis.netIncome >= 0 ? 'var(--green)' : 'var(--red)',
+      icon:   TrendingUp,
+    },
+    {
+      label:  'Doluluk Oranı',
+      value:  `%${kpis.occupancyRate.toLocaleString('tr-TR')}`,
+      sub:    `${kpis.occupiedUnits} / ${kpis.totalUnits} daire`,
+      color:  kpis.occupancyRate >= 80 ? 'var(--green)' : kpis.occupancyRate >= 50 ? 'var(--amber)' : 'var(--red)',
+      icon:   Building2,
+    },
+    {
+      label:  'Gecikmiş Alacak',
+      value:  String(kpis.overdueCount),
+      sub:    kpis.overdueCount === 0 ? 'Tamamı güncel' : 'adet',
+      color:  kpis.overdueCount === 0 ? 'var(--green)' : 'var(--red)',
+      icon:   AlertCircle,
+    },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 4 }}>
+      {items.map(item => {
+        const Icon = item.icon;
+        return (
+          <Card key={item.label} style={{ padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <Icon size={13} color="var(--muted)" strokeWidth={2} />
+              <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {item.label}
+              </span>
+            </div>
+            <div style={{
+              fontSize: '1rem', fontWeight: 700, color: item.color,
+              fontFamily: 'ui-monospace, monospace', letterSpacing: '-0.02em',
+            }}>
+              {item.value}
+            </div>
+            {item.sub && (
+              <div style={{ fontSize: '0.6875rem', color: 'var(--subtle)', marginTop: 3 }}>
+                {item.sub}
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
 
 const COLS = [
   { label: 'Ay'                    },
@@ -48,10 +142,6 @@ function NetCell({ n }: { n: number }) {
   );
 }
 
-function csvRow(cols: (string | number)[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
-
 // ── Export dropdown ────────────────────────────────────────────
 function ExportMenu({ report, year }: { report: Report | null; year: number }) {
   const [open, setOpen] = useState(false);
@@ -67,11 +157,11 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
 
   function downloadMonthlyCsv() {
     if (!report) return;
-    const header = csvRow(['Ay', 'Alacak (₺)', 'Tahsilat (₺)', 'Gider (₺)', 'Net (₺)']);
+    const header = csvRowUtil(['Ay', 'Alacak', 'Tahsilat', 'Gider', 'Net']);
     const rows   = report.rows.map(r =>
-      csvRow([r.month, r.alacak.toFixed(2), r.tahsilat.toFixed(2), r.gider.toFixed(2), r.net.toFixed(2)])
+      csvRowUtil([r.month, fmtMoney(r.alacak), fmtMoney(r.tahsilat), fmtMoney(r.gider), fmtMoney(r.net)])
     );
-    const footer = csvRow(['TOPLAM', report.totals.alacak.toFixed(2), report.totals.tahsilat.toFixed(2), report.totals.gider.toFixed(2), report.totals.net.toFixed(2)]);
+    const footer = csvRowUtil(['TOPLAM', fmtMoney(report.totals.alacak), fmtMoney(report.totals.tahsilat), fmtMoney(report.totals.gider), fmtMoney(report.totals.net)]);
     const csv    = '\uFEFF' + [header, ...rows, footer].join('\r\n');
     triggerDownload(csv, `kira-rapor-${year}.csv`);
     setOpen(false);
@@ -124,7 +214,7 @@ function ExportMenu({ report, year }: { report: Report | null; year: number }) {
           position: 'absolute', top: 'calc(100% + 6px)', right: 0,
           width: 240, zIndex: 50,
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          borderRadius: 10, boxShadow: 'var(--shadow-modal)',
           overflow: 'hidden',
         }}>
           <div style={{ padding: '6px 10px 4px', borderBottom: '1px solid var(--border)' }}>
@@ -288,6 +378,13 @@ function TabBar({ active, onChange }: { active: number; onChange: (i: number) =>
 export default function ReportsPage() {
   const [tab, setTab] = useState(0);
 
+  // Read ?tab=N from URL on first mount so dashboard deep links work
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const t = Number(p.get('tab') ?? '');
+    if (!isNaN(t) && t >= 0 && t < TABS.length) setTab(t);
+  }, []);
+
   return (
     <>
       <PageHeader
@@ -295,12 +392,15 @@ export default function ReportsPage() {
         desc="Mali özet, bina gelirleri ve ödeme geçmişi"
       />
 
+      <SummaryKpis />
+
       <TabBar active={tab} onChange={setTab} />
 
       {tab === 0 && <MonthlySummaryTab />}
       {tab === 1 && <BuildingIncomeTab />}
       {tab === 2 && <TenantsBalanceTab />}
-      {tab === 3 && <PaymentHistoryTab />}
+      {tab === 3 && <OverdueTenantsTab />}
+      {tab === 4 && <PaymentHistoryTab />}
     </>
   );
 }

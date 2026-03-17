@@ -1,12 +1,79 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, FormEvent } from 'react';
 import { Trash2, Download, Upload, AlertTriangle } from 'lucide-react';
 import {
   Card, PageHeader, Btn,
   Modal, ModalBody, ModalFooter,
   toast,
 } from '@/components/ui';
+
+// ── Office Info ───────────────────────────────────────────────
+function OfficeInfoSection() {
+  const [form, setForm] = useState({
+    officeName: '', managerName: '', phone: '', email: '', address: '',
+  });
+  const [saving,  setSaving]  = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/settings/office')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setForm(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings/office', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Hata');
+      toast.success('Ofis bilgileri kaydedildi');
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const field = (label: string, key: keyof typeof form, type = 'text') => (
+    <div>
+      <label>{label}</label>
+      <input
+        type={type}
+        value={form[key]}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        disabled={loading}
+        style={{ width: '100%', boxSizing: 'border-box' }}
+      />
+    </div>
+  );
+
+  return (
+    <form onSubmit={handleSave}>
+      <div style={{ padding: '20px 24px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {field('Ofis / İşletme Adı', 'officeName')}
+          {field('Yetkili / Yönetici Adı', 'managerName')}
+          {field('Telefon', 'phone', 'tel')}
+          {field('E-posta', 'email', 'email')}
+        </div>
+        {field('Adres', 'address')}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
+          <Btn type="submit" disabled={saving || loading}>
+            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          </Btn>
+        </div>
+      </div>
+    </form>
+  );
+}
 
 // ── Backup ────────────────────────────────────────────────────
 function BackupSection() {
@@ -113,8 +180,8 @@ function RestoreSection() {
           <div style={{
             display: 'flex', gap: 12, alignItems: 'flex-start',
             padding: '14px 16px', borderRadius: 10,
-            background: 'rgba(220,74,74,0.07)',
-            border: '1px solid rgba(220,74,74,0.2)',
+            background: 'var(--red-bg)',
+            border: '1px solid rgba(255,69,58,0.2)',
             marginBottom: 16,
           }}>
             <AlertTriangle size={18} color="var(--red)" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -244,12 +311,24 @@ function SettingRow({
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="Ayarlar" desc="Yedekleme ve uygulama yönetimi" />
+      <PageHeader title="Ayarlar" desc="Ofis bilgileri, yedekleme ve uygulama yönetimi" />
 
       <div style={{
         fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)',
         textTransform: 'uppercase', letterSpacing: '0.06em',
         padding: '0 2px',
+      }}>
+        Ofis Bilgileri
+      </div>
+
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <OfficeInfoSection />
+      </Card>
+
+      <div style={{
+        fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)',
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+        padding: '0 2px', marginTop: 4,
       }}>
         Veritabanı Yedekleme
       </div>

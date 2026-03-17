@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { computeChargeStatus } from '@/lib/chargeStatus';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,20 +33,14 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       }),
     ]);
 
-    // Status'u doğru hesapla
+    // Status'u shared utility ile yeniden hesapla (waived ise dokunma)
     const updated = await prisma.rentCharge.findUnique({ where: { id: payment.rentChargeId } });
-    if (updated) {
-      const paid  = Number(updated.paidAmount);
-      const total = Number(updated.chargeAmount);
-      const isOverdue = updated.dueDate < new Date() && paid < total;
+    if (updated && updated.status !== 'waived') {
+      const paid   = Math.max(0, Number(updated.paidAmount));
+      const status = computeChargeStatus(paid, Number(updated.chargeAmount), updated.dueDate);
       await prisma.rentCharge.update({
         where: { id: updated.id },
-        data: {
-          status: paid >= total ? 'paid'
-                : paid > 0     ? 'partial'
-                : isOverdue    ? 'overdue'
-                :                'pending',
-        },
+        data:  { status },
       });
     }
 

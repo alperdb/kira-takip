@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('tr-TR');
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2 });
-}
-
-function csvRow(cols: (string | number)[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
+const METHOD_LABELS: Record<string, string> = {
+  bank:  'Banka',
+  cash:  'Nakit',
+  eft:   'EFT',
+  check: 'Çek',
+  other: 'Diğer',
+};
 
 export async function GET() {
   try {
@@ -33,10 +29,10 @@ export async function GET() {
     ]);
 
     const rows = charges.map(c => {
-      const remaining = c.chargeAmount - c.paidAmount;
+      const remaining = Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount));
       const lastPay   = c.payments.at(-1);
       const statusMap: Record<string, string> = {
-        paid: 'Ödendi', partial: 'Kısmi', overdue: 'Gecikti', pending: 'Bekliyor',
+        paid: 'Ödendi', partial: 'Kısmi', overdue: 'Gecikmiş', pending: 'Bekliyor', waived: 'Silindi',
       };
       return csvRow([
         c.tenant.name,
@@ -45,12 +41,12 @@ export async function GET() {
         c.contract.id,
         fmtDate(c.periodStart),
         fmtDate(c.dueDate),
-        fmtMoney(c.chargeAmount),
-        fmtMoney(c.paidAmount),
+        fmtMoney(Number(c.chargeAmount)),
+        fmtMoney(Number(c.paidAmount)),
         fmtMoney(remaining),
         statusMap[c.status] ?? c.status,
         lastPay ? fmtDate(lastPay.paidAt) : '',
-        lastPay?.method ?? '',
+        lastPay ? (METHOD_LABELS[lastPay.method] ?? lastPay.method) : '',
       ]);
     });
 

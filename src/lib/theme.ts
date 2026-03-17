@@ -6,35 +6,35 @@
 
 export const theme = {
   // Surfaces
-  bg:       '#0F172A',
-  surface:  '#1E293B',
-  surface2: '#0F172A',
-  sidebar:  '#111827',
+  bg:       '#0B0B0C',
+  surface:  '#111113',
+  surface2: '#1A1A1D',
+  sidebar:  '#0D0D0F',
 
   // Borders
-  border:  '#334155',
-  borderS: '#475569',
+  border:  '#222226',
+  borderS: '#3A3A3E',
 
   // Text
-  text:   '#E2E8F0',
-  muted:  '#94A3B8',
-  subtle: '#64748B',
+  text:   '#F5F5F7',
+  muted:  '#8E8E93',
+  subtle: '#636366',
 
   // Primary
-  primary:     '#3B82F6',
-  primaryH:    '#2563EB',
-  primaryBg:   'rgba(59,130,246,0.12)',
-  primaryRing: 'rgba(59,130,246,0.28)',
+  primary:     '#4F8CFF',
+  primaryH:    '#3A7FFF',
+  primaryBg:   'rgba(79,140,255,0.12)',
+  primaryRing: 'rgba(79,140,255,0.28)',
 
   // Status
-  green:   '#22C55E', greenBg:  'rgba(34,197,94,0.12)',
-  red:     '#EF4444', redBg:    'rgba(239,68,68,0.12)',
-  amber:   '#F59E0B', amberBg:  'rgba(245,158,11,0.12)',
-  gray:    '#94A3B8', grayBg:   'rgba(100,116,139,0.12)',
+  green:   '#30D158', greenBg:  'rgba(48,209,88,0.12)',
+  red:     '#FF453A', redBg:    'rgba(255,69,58,0.12)',
+  amber:   '#FFD60A', amberBg:  'rgba(255,214,10,0.10)',
+  gray:    '#8E8E93', grayBg:   'rgba(142,142,147,0.12)',
 
   // Shadows
-  shadowCard:  '0 1px 2px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25)',
-  shadowModal: '0 8px 32px rgba(0,0,0,0.5), 0 32px 64px rgba(0,0,0,0.4)',
+  shadowCard:  '0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 3px rgba(0,0,0,0.6)',
+  shadowModal: '0 0 0 1px rgba(255,255,255,0.07), 0 24px 48px rgba(0,0,0,0.7)',
 
   // Radii
   radiusCard: 14,

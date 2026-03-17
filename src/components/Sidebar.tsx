@@ -7,19 +7,40 @@ import {
   LayoutDashboard, Users, Building2, DoorOpen,
   UserCheck, FileText, Receipt, Settings,
   PanelLeftClose, PanelLeftOpen,
-  TrendingDown, BarChart3,
+  TrendingDown, BarChart3, CreditCard,
 } from 'lucide-react';
 
-const NAV = [
-  { href: '/',           label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/owners',     label: 'Sahipler',    icon: Users           },
-  { href: '/properties', label: 'Binalar',     icon: Building2       },
-  { href: '/units',      label: 'Daireler',    icon: DoorOpen        },
-  { href: '/tenants',    label: 'Kiracılar',   icon: UserCheck       },
-  { href: '/contracts',  label: 'Sözleşmeler', icon: FileText        },
-  { href: '/charges',    label: 'Alacaklar',   icon: Receipt         },
-  { href: '/expenses',   label: 'Giderler',    icon: TrendingDown    },
-  { href: '/reports',    label: 'Raporlar',    icon: BarChart3       },
+const GROUPS = [
+  {
+    label: 'Genel',
+    items: [
+      { href: '/',           label: 'Dashboard',   icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Portföy',
+    items: [
+      { href: '/owners',     label: 'Sahipler',    icon: Users           },
+      { href: '/properties', label: 'Binalar',     icon: Building2       },
+      { href: '/units',      label: 'Daireler',    icon: DoorOpen        },
+    ],
+  },
+  {
+    label: 'Kiralama',
+    items: [
+      { href: '/tenants',    label: 'Kiracılar',   icon: UserCheck       },
+      { href: '/contracts',  label: 'Sözleşmeler', icon: FileText        },
+      { href: '/charges',    label: 'Alacaklar',   icon: Receipt         },
+    ],
+  },
+  {
+    label: 'Finans',
+    items: [
+      { href: '/payments',   label: 'Ödemeler',    icon: CreditCard      },
+      { href: '/expenses',   label: 'Giderler',    icon: TrendingDown    },
+      { href: '/reports',    label: 'Raporlar',    icon: BarChart3       },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -28,7 +49,7 @@ export function Sidebar() {
 
   // Restore from localStorage after hydration
   useEffect(() => {
-    if (pathname === '/login') return;
+    if (pathname === '/login' || pathname === '/setup') return;
     try {
       const saved = localStorage.getItem('sidebar-collapsed') === '1';
       setCollapsed(saved);
@@ -36,7 +57,7 @@ export function Sidebar() {
     } catch { /* ignore */ }
   }, [pathname]);
 
-  if (pathname === '/login') return null;
+  if (pathname === '/login' || pathname === '/setup') return null;
 
   function toggle() {
     const next = !collapsed;
@@ -90,37 +111,42 @@ export function Sidebar() {
       {/* ── Nav ── */}
       <nav style={{
         flex: 1, padding: '8px',
-        display: 'flex', flexDirection: 'column', gap: 1,
+        display: 'flex', flexDirection: 'column', gap: 0,
         overflowY: 'auto', overflowX: 'hidden',
       }}>
-        {!collapsed && (
-          <p style={{
-            fontSize: '0.6875rem', fontWeight: 600, color: 'var(--subtle)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            padding: '12px 8px 6px',
-          }}>
-            Menü
-          </p>
-        )}
+        {GROUPS.map((group) => (
+          <div key={group.label} style={{ marginBottom: 2 }}>
+            {!collapsed && (
+              <p style={{
+                fontSize: '0.6875rem', fontWeight: 600, color: 'var(--subtle)',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                padding: '10px 8px 4px',
+              }}>
+                {group.label}
+              </p>
+            )}
+            {collapsed && <div style={{ height: 8 }} />}
 
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              title={collapsed ? label : undefined}
-              className={`sidebar-link${active ? ' active' : ''}`}
-              style={{
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                padding: collapsed ? '9px' : '7px 9px',
-              }}
-            >
-              <Icon size={15} strokeWidth={active ? 2.5 : 2} style={{ flexShrink: 0 }} />
-              {!collapsed && label}
-            </Link>
-          );
-        })}
+            {group.items.map(({ href, label, icon: Icon }) => {
+              const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={collapsed ? label : undefined}
+                  className={`sidebar-link${active ? ' active' : ''}`}
+                  style={{
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    padding: collapsed ? '10px' : '8px 10px',
+                  }}
+                >
+                  <Icon size={15} strokeWidth={active ? 2.5 : 2} style={{ flexShrink: 0 }} />
+                  {!collapsed && label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* ── Footer ── */}
@@ -131,7 +157,7 @@ export function Sidebar() {
           className={`sidebar-link${pathname === '/settings' ? ' active' : ''}`}
           style={{
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '9px' : '7px 9px',
+            padding: collapsed ? '10px' : '8px 10px',
           }}
           title={collapsed ? 'Ayarlar' : undefined}
         >
@@ -145,7 +171,7 @@ export function Sidebar() {
           className="sidebar-link"
           style={{
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '9px' : '7px 9px',
+            padding: collapsed ? '10px' : '8px 10px',
             width: '100%', border: 'none', cursor: 'pointer',
           }}
           title={collapsed ? 'Genişlet' : 'Daralt'}

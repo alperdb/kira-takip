@@ -11,7 +11,7 @@ import { UpcomingPayments } from '@/components/dashboard/UpcomingPayments';
 import { ExpiringContracts } from '@/components/dashboard/ExpiringContracts';
 import { FinancialCharts  } from '@/components/dashboard/FinancialCharts';
 import { RecentPayments   } from '@/components/dashboard/RecentPayments';
-import { DollarSign, BarChart3, AlertTriangle, Home } from 'lucide-react';
+import { Banknote, BarChart3, AlertTriangle, Home } from 'lucide-react';
 
 const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
@@ -24,9 +24,12 @@ async function getData() {
   const [
     unitCount, vacantCount, occupiedCount,
     overdueCharges,
-    thisMonthCharged, thisMonthPaid,
+    thisMonthBilled,      // total billed this month (for collection rate)
+    thisMonthActualPaid,  // actual cash collected this month
+    thisMonthOpenCharges, // open (unpaid/partial/overdue) charges this month
     thisMonthExpenses,
-    monthlyRaw,
+    monthlyChargesRaw,    // charges by period — alacak line
+    monthlyPaymentsRaw,   // actual payments by paidAt — tahsilat line
   ] = await Promise.all([
     prisma.unit.count(),
     prisma.unit.count({ where: { status: 'vacant' } }),
@@ -41,43 +44,74 @@ async function getData() {
       orderBy: { dueDate: 'asc' },
       take: 10,
     }),
+    // Total billed this month (chargeAmount + paidAmount for collection rate)
     prisma.rentCharge.aggregate({
-      where: { periodStart: { gte: monthStart, lt: monthEnd } },
-      _sum: { chargeAmount: true },
+      where: { periodStart: { gte: monthStart, lt: monthEnd }, status: { not: 'waived' } },
+      _sum: { chargeAmount: true, paidAmount: true },
     }),
+    // Actual payments received this month (cash-basis)
+    prisma.payment.aggregate({
+      where: { paidAt: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
+    // Open balance this month — only unpaid/partial/overdue charges
     prisma.rentCharge.aggregate({
-      where: { periodStart: { gte: monthStart, lt: monthEnd } },
-      _sum: { paidAmount: true },
+      where: {
+        periodStart: { gte: monthStart, lt: monthEnd },
+        status: { in: ['pending', 'partial', 'overdue'] },
+      },
+      _sum: { chargeAmount: true, paidAmount: true },
     }),
     prisma.expense.aggregate({
       where: { date: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
+    // Charges by period for alacak line (exclude waived)
     prisma.rentCharge.groupBy({
       by: ['periodStart'],
-      where: { periodStart: { gte: sixMonAgo } },
-      _sum: { chargeAmount: true, paidAmount: true },
+      where: { periodStart: { gte: sixMonAgo }, status: { not: 'waived' } },
+      _sum: { chargeAmount: true },
       orderBy: { periodStart: 'asc' },
+    }),
+    // Actual payments for last 6 months for tahsilat line
+    prisma.payment.findMany({
+      where: { paidAt: { gte: sixMonAgo } },
+      select: { amount: true, paidAt: true },
     }),
   ]);
 
-  const charged     = Number(thisMonthCharged._sum.chargeAmount ?? 0);
-  const paid        = Number(thisMonthPaid._sum.paidAmount ?? 0);
-  const expenses    = Number(thisMonthExpenses._sum.amount ?? 0);
-  const outstanding = overdueCharges.reduce(
-    (s, c) => s + Number(c.chargeAmount) - Number(c.paidAmount), 0
+  const totalBilled      = Number(thisMonthBilled._sum.chargeAmount ?? 0);
+  const totalPaidOnBills = Number(thisMonthBilled._sum.paidAmount   ?? 0);
+  const openCharged      = Number(thisMonthOpenCharges._sum.chargeAmount ?? 0);
+  const openPaid         = Number(thisMonthOpenCharges._sum.paidAmount   ?? 0);
+  const charged          = Math.max(0, openCharged - openPaid); // outstanding this month
+  const paid             = Number(thisMonthActualPaid._sum.amount ?? 0);
+  const expenses         = Number(thisMonthExpenses._sum.amount   ?? 0);
+  const outstanding      = overdueCharges.reduce(
+    (s, c) => s + Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount)), 0
   );
   const occupancy = unitCount > 0 ? Math.round((occupiedCount / unitCount) * 100) : 0;
 
-  const chartData: MonthlyPoint[] = monthlyRaw.map(m => ({
-    month:     TR_MONTHS[new Date(m.periodStart).getMonth()],
-    alacak:    Number(m._sum.chargeAmount ?? 0),
-    tahsilat:  Number(m._sum.paidAmount   ?? 0),
-  }));
+  // Group actual payments by billing-period month for the chart
+  const pmtByMonth = new Map<string, number>();
+  for (const p of monthlyPaymentsRaw) {
+    const key = `${p.paidAt.getFullYear()}-${p.paidAt.getMonth()}`;
+    pmtByMonth.set(key, (pmtByMonth.get(key) ?? 0) + Number(p.amount));
+  }
+
+  const chartData: MonthlyPoint[] = monthlyChargesRaw.map(m => {
+    const d   = new Date(m.periodStart);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    return {
+      month:    TR_MONTHS[d.getMonth()],
+      alacak:   Number(m._sum.chargeAmount ?? 0),
+      tahsilat: pmtByMonth.get(key) ?? 0,
+    };
+  });
 
   return {
-    unitCount, vacantCount, charged, paid, expenses, outstanding, occupancy,
-    overdueCharges, chartData,
+    unitCount, vacantCount, charged, paid, totalBilled, totalPaidOnBills,
+    expenses, outstanding, occupancy, overdueCharges, chartData,
   };
 }
 
@@ -98,7 +132,8 @@ export default async function Dashboard() {
 
   const now       = new Date();
   const monthName = now.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-  const collectPct = d.charged > 0 ? Math.round((d.paid / d.charged) * 100) : 0;
+  // Collection rate: what % of this month's billed charges have been paid
+  const collectPct = d.totalBilled > 0 ? Math.round((d.totalPaidOnBills / d.totalBilled) * 100) : 0;
 
   return (
     <>
@@ -111,9 +146,9 @@ export default async function Dashboard() {
       <RateBand />
 
       {/* ── KPI Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'stretch' }}>
         <KpiCard
-          icon={DollarSign}
+          icon={Banknote}
           label="Bu Ay Alacak"
           value={fmt(d.charged)}
           color="blue"
@@ -147,7 +182,7 @@ export default async function Dashboard() {
       <BudgetSummary gelir={d.paid} gider={d.expenses} />
 
       {/* ── Chart + Donut + Quick Actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr minmax(240px, 280px) minmax(300px, 360px)', gap: 20, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr minmax(240px, 280px) minmax(300px, 360px)', gap: 16, alignItems: 'stretch' }}>
 
         {/* Line chart */}
         <Card style={{ display: 'flex', flexDirection: 'column' }}>
@@ -208,7 +243,7 @@ export default async function Dashboard() {
       <FinancialCharts />
 
       {/* ── Bottom widgets ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'stretch' }}>
         <OverdueList charges={d.overdueCharges} />
         <UpcomingPayments />
         <ExpiringContracts />

@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     });
 
     const totalOutstanding = openCharges.reduce(
-      (s, c) => s + Number(c.chargeAmount) - Number(c.paidAmount), 0,
+      (s, c) => s + Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount)), 0,
     );
 
     return NextResponse.json({ totalOutstanding, openCount: openCharges.length });

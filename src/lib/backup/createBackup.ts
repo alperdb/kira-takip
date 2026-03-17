@@ -31,12 +31,16 @@ export async function createBackup(): Promise<{ data: Buffer; filename: string }
   const data     = fs.readFileSync(dbPath);
   const filename = buildFilename();
 
-  // Save a server-side copy to /backups
-  const backupsDir = path.resolve(process.cwd(), 'backups');
-  if (!fs.existsSync(backupsDir)) {
-    fs.mkdirSync(backupsDir, { recursive: true });
+  // Save a server-side copy to /backups (best-effort — may fail in packaged app)
+  try {
+    const backupsDir = path.resolve(process.cwd(), 'backups');
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(backupsDir, filename), data);
+  } catch {
+    // Ignore — client download is unaffected by server-side copy failure
   }
-  fs.writeFileSync(path.join(backupsDir, filename), data);
 
   return { data, filename };
 }

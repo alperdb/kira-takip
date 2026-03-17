@@ -25,8 +25,8 @@ function urgencyBg(days: number): string {
 }
 
 function urgencyBorder(days: number): string {
-  if (days <= 2) return 'rgba(239,68,68,0.2)';
-  if (days <= 5) return 'rgba(245,158,11,0.2)';
+  if (days <= 2) return 'rgba(255,69,58,0.25)';
+  if (days <= 5) return 'rgba(255,214,10,0.2)';
   return 'var(--border)';
 }
 

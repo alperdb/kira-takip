@@ -7,8 +7,6 @@ const ERR: React.CSSProperties = {
 };
 
 // ── Field wrapper ────────────────────────────────────────
-// Uses global `label` styles from globals.css; adds error/hint below input
-
 export function Field({
   label, required, error, hint, children,
 }: {
@@ -26,32 +24,31 @@ export function Field({
       </label>
       {children}
       {error
-        ? <p style={{ margin: '5px 0 0', fontSize: '0.75rem', color: 'var(--red)' }}>{error}</p>
+        ? <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--red)', lineHeight: 1.4 }}>{error}</p>
         : hint
-        ? <p style={{ margin: '5px 0 0', fontSize: '0.75rem', color: 'var(--subtle)' }}>{hint}</p>
+        ? <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--subtle)', lineHeight: 1.4 }}>{hint}</p>
         : null}
     </div>
   );
 }
 
 // ── FieldRow — two inputs side by side ───────────────────
-
 export function FieldRow({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
       {children}
     </div>
   );
 }
 
 // ── SectionLabel — divider title inside a form ───────────
-
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{
-      margin: '6px 0 0',
-      fontSize: '0.6875rem', fontWeight: 600,
-      color: 'var(--subtle)', textTransform: 'uppercase', letterSpacing: '0.07em',
+      margin: '8px 0 0',
+      fontSize: '0.6875rem', fontWeight: 700,
+      color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em',
+      paddingBottom: 4, borderBottom: '1px solid var(--border)',
     }}>
       {children}
     </p>
@@ -59,19 +56,18 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ── Alert inside a form (error / info) ───────────────────
-
 export function FormAlert({ children, variant = 'error' }: {
   children: React.ReactNode;
   variant?: 'error' | 'info';
 }) {
-  const styles =
-    variant === 'error'
-      ? { background: 'var(--red-bg)',     color: 'var(--red)'     }
-      : { background: 'var(--primary-bg)', color: 'var(--primary)' };
-
+  const isError = variant === 'error';
   return (
     <div style={{
-      ...styles, borderRadius: 8, padding: '8px 12px',
+      background: isError ? 'var(--red-bg)'     : 'var(--primary-bg)',
+      color:      isError ? 'var(--red)'         : 'var(--primary)',
+      borderLeft: `3px solid ${isError ? 'var(--red)' : 'var(--primary)'}`,
+      borderRadius: '0 8px 8px 0',
+      padding: '9px 13px',
       fontSize: '0.8125rem', fontWeight: 500, lineHeight: 1.5,
     }}>
       {children}
@@ -80,10 +76,7 @@ export function FormAlert({ children, variant = 'error' }: {
 }
 
 // ── Input components ─────────────────────────────────────
-// Thin wrappers around native elements — keep global CSS focus ring.
-// Extra `hasError` prop adds red border/ring.
-
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { hasError?: boolean };
+type InputProps  = React.InputHTMLAttributes<HTMLInputElement>   & { hasError?: boolean };
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & { hasError?: boolean };
 
 export function TextInput({ hasError, style, ...props }: InputProps) {

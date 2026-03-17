@@ -22,13 +22,14 @@ export async function GET() {
         orderBy: { periodStart: 'asc' },
       }),
 
-      // Revenue by building (total paid, all time)
+      // Revenue by building — actual payment records, not charge snapshots
       prisma.$queryRaw<Array<{ title: string; paid: number | bigint }>>`
-        SELECT p.title, COALESCE(SUM(rc.paid_amount), 0) AS paid
-        FROM rent_charges rc
-        JOIN units u ON rc.unit_id = u.id
-        JOIN properties p ON u.property_id = p.id
-        GROUP BY p.id, p.title
+        SELECT prop.title, COALESCE(SUM(pay.amount), 0) AS paid
+        FROM payments pay
+        JOIN rent_charges rc   ON pay.rent_charge_id = rc.id
+        JOIN units u           ON rc.unit_id = u.id
+        JOIN properties prop   ON u.property_id = prop.id
+        GROUP BY prop.id, prop.title
         ORDER BY paid DESC
         LIMIT 10
       `,
@@ -37,7 +38,7 @@ export async function GET() {
       prisma.$queryRaw<Array<{ title: string; cnt: number | bigint; overdue: number | bigint }>>`
         SELECT p.title,
                COUNT(*) AS cnt,
-               COALESCE(SUM(rc.charge_amount - rc.paid_amount), 0) AS overdue
+               COALESCE(SUM(CASE WHEN rc.charge_amount > rc.paid_amount THEN rc.charge_amount - rc.paid_amount ELSE 0 END), 0) AS overdue
         FROM rent_charges rc
         JOIN units u ON rc.unit_id = u.id
         JOIN properties p ON u.property_id = p.id
@@ -49,6 +50,7 @@ export async function GET() {
     ]);
 
     const totalReceivable = Number(totalAgg._sum.chargeAmount ?? 0);
+    // Use paidAmount on charges (= sum of actual payments, kept in sync)
     const totalCollected  = Number(totalAgg._sum.paidAmount  ?? 0);
     const collectionRate  = totalReceivable > 0
       ? Math.round((totalCollected / totalReceivable) * 100)

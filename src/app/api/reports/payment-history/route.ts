@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 const METHOD_LABELS: Record<string, string> = {
-  cash:     'Nakit',
-  bank:     'Banka',
-  transfer: 'Havale/EFT',
-  card:     'Kart',
+  cash:  'Nakit',
+  bank:  'Banka',
+  eft:   'EFT',
+  check: 'Çek',
+  other: 'Diğer',
 };
 
 export async function GET(req: NextRequest) {

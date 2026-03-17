@@ -27,7 +27,7 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{
           width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-          background: 'rgba(239,68,68,0.12)',
+          background: 'var(--red-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <AlertTriangle size={14} color="var(--red)" strokeWidth={2.5} />
@@ -46,7 +46,7 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
             padding: '2px 8px', borderRadius: 20,
             fontSize: '0.6875rem', fontWeight: 600,
             background: 'var(--red-bg)', color: 'var(--red)',
-            border: '1px solid rgba(239,68,68,0.2)',
+            border: '1px solid rgba(255,69,58,0.2)',
           }}>
             {charges.length}
           </span>
@@ -76,7 +76,7 @@ export function OverdueList({ charges }: { charges: Charge[] }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '9px 11px', borderRadius: 8,
                 background: 'var(--red-bg)',
-                border: '1px solid rgba(239,68,68,0.15)',
+                border: '1px solid rgba(255,69,58,0.2)',
                 gap: 8,
               }}>
                 {/* Info — clickable link */}

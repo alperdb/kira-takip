@@ -1,24 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-function fmtDate(d: Date | string | null): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('tr-TR');
-}
-
-function fmtMoney(n: number | { toString(): string }): string {
-  return `₺${Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
-}
-
-function csvRow(cols: string[]): string {
-  return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-}
+import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 const STATUS_LABELS: Record<string, string> = {
   pending:  'Bekliyor',
   paid:     'Ödendi',
   partial:  'Kısmi',
   overdue:  'Gecikmiş',
+  waived:   'Silindi',
 };
 
 export async function GET() {
@@ -29,7 +18,7 @@ export async function GET() {
         unit:     { select: { unitNo: true, property: { select: { title: true } } } },
         contract: { select: { id: true } },
       },
-      orderBy: { dueDate: 'desc' },
+      orderBy: { dueDate: 'asc' },
     });
 
     const header = csvRow([
@@ -39,7 +28,7 @@ export async function GET() {
     ]);
 
     const rows = charges.map(c => {
-      const kalan = Number(c.chargeAmount) - Number(c.paidAmount);
+      const kalan = Math.max(0, Number(c.chargeAmount) - Number(c.paidAmount));
       return csvRow([
         String(c.id),
         String(c.contract.id),

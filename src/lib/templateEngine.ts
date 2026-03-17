@@ -42,13 +42,18 @@ export interface ContractBindingInput {
 
 function fmtDate(d: Date | string | null | undefined): string {
   if (!d) return '';
-  const date = typeof d === 'string' ? new Date(d) : d;
-  return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const dt = typeof d === 'string' ? new Date(d) : d;
+  if (isNaN(dt.getTime())) return '';
+  // DD.MM.YYYY — standard Turkish legal contract date format, locale-independent
+  const day   = String(dt.getDate()).padStart(2, '0');
+  const month = String(dt.getMonth() + 1).padStart(2, '0');
+  return `${day}.${month}.${dt.getFullYear()}`;
 }
 
 function fmtAmount(n: number, currency = 'TRY'): string {
-  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0 }).format(n)
-    + (currency === 'TRY' ? ' TL' : ` ${currency}`);
+  // Locale-independent: Turkish thousands separator is "."
+  const formatted = Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return currency === 'TRY' ? `${formatted} TL` : `${formatted} ${currency}`;
 }
 
 export function bindContractData(input: ContractBindingInput): TemplateData {

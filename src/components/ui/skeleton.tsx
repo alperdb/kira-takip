@@ -1,4 +1,4 @@
-export function Skeleton({ w, h = 14 }: { w?: number | string; h?: number }) {
+export function Skeleton({ w, h = 12 }: { w?: number | string; h?: number }) {
   return (
     <div
       className="skeleton"
@@ -15,7 +15,7 @@ export function TableSkeleton({ cols, rows = 5 }: { cols: number; rows?: number 
       {Array.from({ length: rows }).map((_, ri) => (
         <tr key={ri} style={{ borderBottom: '1px solid var(--border)' }}>
           {Array.from({ length: cols }).map((_, ci) => (
-            <td key={ci} style={{ padding: '16px 24px' }}>
+            <td key={ci} style={{ padding: '12px 20px' }}>
               <Skeleton w={widths[ci % widths.length]} />
             </td>
           ))}
