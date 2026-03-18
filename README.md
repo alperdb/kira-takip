@@ -44,11 +44,25 @@ npm run dev        # http://localhost:3001
 
 ```bash
 npm run electron:dev           # run in Electron (dev mode)
-npm run electron:build:win     # Windows installer → dist/Kira Takip-*-Setup.exe   (run on Windows)
-npm run electron:build:mac     # macOS DMG → dist/Kira Takip-*-x64.dmg / *-arm64.dmg  (run on macOS)
+npm run electron:build:win     # build only (no GitHub upload)
 ```
 
 On first launch the app creates the SQLite database automatically and prompts for initial setup (admin password + office info).
+
+### Publishing a Release
+
+1. Set version in `package.json` (e.g. `1.1.0`)
+2. Create `.env.release` in the project root (never committed):
+   ```
+   GITHUB_TOKEN=your_personal_access_token
+   ```
+3. Run:
+   ```bash
+   npm run release
+   ```
+   This builds the app, creates `dist/KiraTakip-v{version}-portable.zip`, and publishes it to GitHub Releases automatically.
+
+The GitHub token needs `repo` scope. Create one at: https://github.com/settings/tokens
 
 ### Installing from a Release (Windows)
 
