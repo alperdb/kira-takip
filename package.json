@@ -1,6 +1,6 @@
 {
   "name": "kira-app",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Rental and property management application for Turkish landlords",
   "author": "alperdb",
   "private": true,
@@ -16,7 +16,8 @@
     "electron:build": "npm run build && node electron/copy-static.js && electron-builder --dir && node electron/make-zip.js",
     "electron:build:win": "node electron/setup-win-cache.js && npm run build && node electron/copy-static.js && electron-builder --win dir --x64 && node electron/make-zip.js",
     "electron:build:win:installer": "npm run build && node electron/copy-static.js && electron-builder --win --x64",
-    "electron:build:mac": "npm run build && node electron/copy-static.js && electron-builder --mac --x64 --arm64"
+    "electron:build:mac": "npm run build && node electron/copy-static.js && electron-builder --mac --x64 --arm64",
+    "release": "node electron/setup-win-cache.js && npm run build && node electron/copy-static.js && electron-builder --win dir --x64 && node electron/make-zip.js"
   },
   "build": {
     "appId": "com.kiratakip.app",

@@ -8,7 +8,8 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs   = require('fs');
 
-const root = path.join(__dirname, '..');
+const root    = path.join(__dirname, '..');
+const version = require('../package.json').version;
 
 // electron-builder --dir outputs to platform-specific directories
 const candidates = ['win-unpacked', 'mac', 'mac-arm64', 'mac-x64', 'linux-unpacked'];
@@ -21,7 +22,7 @@ if (!unpacked) {
   process.exit(1);
 }
 
-const outputZip = path.join(root, 'dist', 'KiraTakip-portable.zip');
+const outputZip = path.join(root, 'dist', `KiraTakip-v${version}-portable.zip`);
 
 if (fs.existsSync(outputZip)) fs.unlinkSync(outputZip);
 
@@ -35,5 +36,5 @@ if (process.platform === 'win32') {
 }
 
 const sizeMb = (fs.statSync(outputZip).size / 1_048_576).toFixed(1);
-console.log(`\nKiraTakip-portable.zip created — ${sizeMb} MB`);
+console.log(`\nKiraTakip-v${version}-portable.zip created — ${sizeMb} MB`);
 console.log(`Location: ${outputZip}`);
