@@ -1,12 +1,10 @@
 const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
-const { spawn }  = require('child_process');
 const path       = require('path');
 const http       = require('http');
 const fs         = require('fs');
 
 const PORT    = 3001;
 const DEV_URL = `http://localhost:${PORT}`;
-let   nextProcess = null;
 let   win         = null;
 
 // ── SQLite DB path ─────────────────────────────────────────
@@ -15,23 +13,31 @@ function getDbPath() {
 }
 
 // ── Resolve Next.js standalone app directory ────────────────
-// On Windows, Next.js nests standalone output under the full project path
-// (e.g. standalone/Desktop/ClaudeProjects/kira-app/server.js)
-// On Linux/Mac the server is directly at standalone/server.js
+// On macOS/Linux, Next.js puts server.js directly at standalone/server.js.
+// On Windows, it nests under the full build-machine path (e.g.
+//   standalone/Users/dev/project/server.js).
+// We walk the tree so packaged builds work on any end-user machine regardless
+// of where the developer built the app.
 function getStandaloneAppDir() {
   const standaloneBase = path.join(__dirname, '..', '.next', 'standalone');
-  const direct = path.join(standaloneBase, 'server.js');
-  if (fs.existsSync(direct)) return standaloneBase;
 
-  if (process.platform === 'win32') {
-    const appRoot = path.join(__dirname, '..');
-    // Strip drive letter (e.g. C:\) → Desktop\ClaudeProjects\kira-app
-    const withoutDrive = appRoot.replace(/^[A-Za-z]:[\\/]/, '');
-    const nested = path.join(standaloneBase, withoutDrive);
-    if (fs.existsSync(path.join(nested, 'server.js'))) return nested;
+  if (fs.existsSync(path.join(standaloneBase, 'server.js'))) return standaloneBase;
+
+  function findServerDir(dir, depth) {
+    if (depth === 0) return null;
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const sub = path.join(dir, entry.name);
+        if (fs.existsSync(path.join(sub, 'server.js'))) return sub;
+        const found = findServerDir(sub, depth - 1);
+        if (found) return found;
+      }
+    } catch { /* ignore permission errors */ }
+    return null;
   }
 
-  return standaloneBase; // fallback
+  return findServerDir(standaloneBase, 6) ?? standaloneBase;
 }
 
 // ── Resolve Prisma query engine binary path (always call before spawning Next.js) ──
@@ -157,34 +163,35 @@ app.whenReady().then(async () => {
   const dbUrl = `file:${dbPath.replace(/\\/g, '/')}`;
 
   if (isDev) {
-    process.env.DATABASE_URL = dbUrl;
+    process.env.DATABASE_URL     = dbUrl;
+    process.env.ELECTRON_DB_PATH = dbPath;
     await waitForServer(DEV_URL).catch(() => {
       console.error('Start Next.js first: npm run dev');
     });
     createWindow();
   } else {
     const serverScript = path.join(getStandaloneAppDir(), 'server.js');
-    nextProcess = spawn(process.execPath, [serverScript], {
-      env: {
-        ...process.env,
-        PORT: String(PORT),
-        NODE_ENV: 'production',
-        HOSTNAME: '127.0.0.1',
-        DATABASE_URL: dbUrl,
-      },
-      stdio: 'inherit',
-    });
 
-    // Handle unexpected server crash after window is shown
-    nextProcess.on('exit', (code) => {
-      if (code !== 0 && win) {
-        win.loadURL(`data:text/html,<h2 style="font-family:sans-serif;padding:40px">Sunucu beklenmedik şekilde kapandı (kod: ${code ?? '?'}). Uygulamayı yeniden başlatın.</h2>`);
-      }
-    });
+    // Run Next.js standalone server inside the main process.
+    // Using require() avoids spawning a second packaged-app binary (which would
+    // open a second Electron window and recursively attempt to start another server).
+    process.env.PORT             = String(PORT);
+    process.env.NODE_ENV         = 'production';
+    process.env.HOSTNAME         = '127.0.0.1';
+    process.env.DATABASE_URL     = dbUrl;
+    process.env.ELECTRON_DB_PATH = dbPath;
+
+    try {
+      require(serverScript);
+    } catch (err) {
+      dialog.showErrorBox('Başlatma Hatası', `Sunucu yüklenemedi:\n${err.message}`);
+      app.quit();
+      return;
+    }
 
     try {
       await waitForServer(DEV_URL);
-    } catch (err) {
+    } catch {
       dialog.showErrorBox('Başlatma Hatası', 'Uygulama sunucusu başlatılamadı. Lütfen uygulamayı yeniden başlatın.');
       app.quit();
       return;
@@ -195,7 +202,6 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (nextProcess && nextProcess.exitCode === null) nextProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 

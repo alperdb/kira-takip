@@ -2,7 +2,7 @@ export { Card, PageHeader, Btn, Money } from './base';
 export { Badge } from './badge';
 export type { BadgeVariant } from './badge';
 export { EmptyState } from './empty';
-export { Skeleton, TableSkeleton } from './skeleton';
+export { Skeleton, TableSkeleton, TableSkeletonStandalone } from './skeleton';
 export { DataTable, Td, TRow, TableHead, EmptyRow } from './table';
 export type { ColDef } from './table';
 export { Modal, ModalBody, ModalFooter } from './modal';

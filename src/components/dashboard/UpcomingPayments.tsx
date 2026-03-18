@@ -130,17 +130,14 @@ export function UpcomingPayments() {
                   transition: 'border-color 0.12s',
                 }}
               >
-                <a
-                  href={`/contracts/${item.contractId}`}
-                  style={{ textDecoration: 'none', minWidth: 0, flex: 1 }}
-                >
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontWeight: 600, fontSize: '0.8125rem', margin: '0 0 1px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.tenantName}
                   </p>
                   <p style={{ fontSize: '0.6875rem', color: 'var(--muted)', margin: 0 }}>
                     {item.propertyTitle} · {item.unitNo}
                   </p>
-                </a>
+                </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
                   <div style={{ textAlign: 'right' }}>
@@ -160,20 +157,18 @@ export function UpcomingPayments() {
                     </p>
                   </div>
 
-                  {item.chargeId && (
-                    <button
-                      onClick={e => handlePay(item, e)}
-                      style={{
-                        height: 26, padding: '0 10px', borderRadius: 6,
-                        fontSize: '0.75rem', fontWeight: 600,
-                        background: 'var(--primary)', color: '#fff',
-                        border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
-                      Ödeme Al
-                    </button>
-                  )}
+                  <button
+                    onClick={e => handlePay(item, e)}
+                    style={{
+                      height: 26, padding: '0 10px', borderRadius: 6,
+                      fontSize: '0.75rem', fontWeight: 600,
+                      background: 'var(--primary)', color: '#fff',
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Ödeme Al
+                  </button>
                 </div>
               </div>
             ))}

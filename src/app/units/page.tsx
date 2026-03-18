@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, Money, EmptyState } from '@/components/ui';

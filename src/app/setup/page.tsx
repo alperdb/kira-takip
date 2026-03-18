@@ -117,7 +117,7 @@ export default function SetupPage() {
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="kullanıcı adı"
                   autoComplete="username"
                   required
                   style={{

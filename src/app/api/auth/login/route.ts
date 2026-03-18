@@ -4,8 +4,10 @@ import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { SESSION_COOKIE, SESSION_TTL_MS } from '@/lib/auth';
 
-// In dev only: seed default admin if no users exist (so `npm run dev` works without setup)
-async function ensureDefaultAdmin() {
+// DEV ONLY — never runs in packaged builds (NODE_ENV=production at build time eliminates this).
+// Allows `npm run dev` to work without running through the setup wizard every time.
+// Credentials: admin / admin123  — local dev convenience, not shipped to end users.
+async function devSeedDefaultAdmin() {
   const count = await prisma.user.count();
   if (count === 0) {
     const hash = await bcrypt.hash('admin123', 12);
@@ -18,7 +20,7 @@ async function ensureDefaultAdmin() {
 export async function POST(req: NextRequest) {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      await ensureDefaultAdmin();
+      await devSeedDefaultAdmin();
     }
 
     const { username, password } = await req.json();

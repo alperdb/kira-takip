@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { prisma } from '@/lib/db';
 import { Card, PageHeader } from '@/components/ui';
 import AddForm from '@/components/AddForm';

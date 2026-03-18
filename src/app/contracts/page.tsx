@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { prisma } from '@/lib/db';
 import { PageHeader } from '@/components/ui';
 import { ContractModal } from './ContractModal';
@@ -7,9 +9,10 @@ import { OwnerSelect } from '@/components/OwnerSelect';
 export default async function ContractsPage({
   searchParams,
 }: {
-  searchParams: { ownerId?: string };
+  searchParams: Promise<{ ownerId?: string }>;
 }) {
-  const ownerIdFilter = searchParams.ownerId ? Number(searchParams.ownerId) : undefined;
+  const { ownerId } = await searchParams;
+  const ownerIdFilter = ownerId ? Number(ownerId) : undefined;
 
   const [contracts, vacantUnits, allUnits, tenants, owners] = await Promise.all([
     prisma.contract.findMany({

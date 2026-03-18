@@ -43,11 +43,24 @@ npm run dev        # http://localhost:3001
 ### Desktop Build
 
 ```bash
-npm run electron:dev          # run in Electron (dev)
-npm run electron:build        # production build → dist/
+npm run electron:dev           # run in Electron (dev mode)
+npm run electron:build:win     # Windows installer → dist/Kira Takip-*-Setup.exe   (run on Windows)
+npm run electron:build:mac     # macOS DMG → dist/Kira Takip-*-x64.dmg / *-arm64.dmg  (run on macOS)
 ```
 
 On first launch the app creates the SQLite database automatically and prompts for initial setup (admin password + office info).
+
+### Installing from a Release
+
+**Windows**
+1. Download `Kira Takip-*-Setup.exe` from the Releases page
+2. Run the installer — no admin rights required if installing to a user directory
+3. Launch **Kira Takip** from the Start Menu or Desktop shortcut
+
+**macOS**
+1. Download `Kira Takip-*-arm64.dmg` (Apple Silicon) or `*-x64.dmg` (Intel) from the Releases page
+2. Open the DMG and drag **Kira Takip** to your Applications folder
+3. On first launch: right-click → Open to bypass Gatekeeper (unsigned build)
 
 ## Notes
 

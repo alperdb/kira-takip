@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { prisma } from '@/lib/db';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';

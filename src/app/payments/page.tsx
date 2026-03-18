@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Download, CreditCard, Trash2 } from 'lucide-react';
 import {
   Card, PageHeader, DataTable, Td, TRow,
-  Badge, Money, Btn, EmptyState, TableSkeleton,
+  Badge, Money, Btn, EmptyState, TableSkeletonStandalone,
   toast,
 } from '@/components/ui';
 import { month, date } from '@/lib/format';
@@ -162,7 +162,7 @@ export default function PaymentsPage() {
         </div>
 
         {loading ? (
-          <TableSkeleton cols={COLS.length} rows={8} />
+          <TableSkeletonStandalone cols={COLS.length} rows={8} />
         ) : filtered.length === 0 ? (
           <EmptyState icon={CreditCard} title="Ödeme bulunamadı" />
         ) : (

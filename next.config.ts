@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // Standalone mode: bundles Next.js + node_modules for Electron production
   output: 'standalone',
 
+  // Exclude dist/ and electron build output from nft tracing so
+  // previous Electron builds don't get embedded in the standalone tree.
+  outputFileTracingExcludes: {
+    '*': ['dist/**', 'electron/**'],
+  },
+
   // Disable "powered by Next.js" header
   poweredByHeader: false,
 

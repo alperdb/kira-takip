@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 function getDbPath(): string {
+  // ELECTRON_DB_PATH is set by electron/main.js — always correct in packaged builds
+  if (process.env.ELECTRON_DB_PATH) return process.env.ELECTRON_DB_PATH;
   const url = process.env.DATABASE_URL ?? '';
   const filePath = url.replace(/^file:/, '');
   return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
@@ -25,8 +27,10 @@ export async function createBackup(): Promise<{ data: Buffer; filename: string }
     throw new Error('Veritabanı dosyası bulunamadı');
   }
 
-  // Flush WAL to main DB file before copying
-  await prisma.$executeRawUnsafe('PRAGMA wal_checkpoint(FULL)');
+  // Flush WAL to main DB file before copying.
+  // Must use $queryRawUnsafe — PRAGMA wal_checkpoint returns result rows,
+  // which $executeRawUnsafe rejects in SQLite.
+  await prisma.$queryRawUnsafe('PRAGMA wal_checkpoint(FULL)');
 
   const data     = fs.readFileSync(dbPath);
   const filename = buildFilename();

@@ -98,7 +98,7 @@ export default function AddForm({ endpoint, fields, title, label = 'Yeni Ekle' }
           </ModalBody>
           <ModalFooter>
             <Btn variant="ghost" onClick={handleClose}>İptal</Btn>
-            <Btn disabled={loading}>{loading ? 'Kaydediliyor...' : 'Kaydet'}</Btn>
+            <Btn type="submit" disabled={loading}>{loading ? 'Kaydediliyor...' : 'Kaydet'}</Btn>
           </ModalFooter>
         </form>
       </Modal>

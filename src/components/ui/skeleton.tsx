@@ -7,6 +7,8 @@ export function Skeleton({ w, h = 12 }: { w?: number | string; h?: number }) {
   );
 }
 
+// Renders bare <tr> rows — must be placed inside <table><tbody>.
+// Use TableSkeletonStandalone when no parent table exists.
 export function TableSkeleton({ cols, rows = 5 }: { cols: number; rows?: number }) {
   const widths = [140, '65%', '55%', 60, 80];
 
@@ -22,5 +24,18 @@ export function TableSkeleton({ cols, rows = 5 }: { cols: number; rows?: number 
         </tr>
       ))}
     </>
+  );
+}
+
+// Self-contained version for use inside a Card/div (no parent table).
+export function TableSkeletonStandalone({ cols, rows = 5 }: { cols: number; rows?: number }) {
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <tbody>
+          <TableSkeleton cols={cols} rows={rows} />
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -13,11 +13,15 @@
     "test:watch": "vitest",
     "lint": "eslint",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && node electron/copy-static.js && electron-builder --dir && node electron/make-zip.js"
+    "electron:build": "npm run build && node electron/copy-static.js && electron-builder --dir && node electron/make-zip.js",
+    "electron:build:win": "node electron/setup-win-cache.js && npm run build && node electron/copy-static.js && electron-builder --win dir --x64 && node electron/make-zip.js",
+    "electron:build:win:installer": "npm run build && node electron/copy-static.js && electron-builder --win --x64",
+    "electron:build:mac": "npm run build && node electron/copy-static.js && electron-builder --mac --x64 --arm64"
   },
   "build": {
     "appId": "com.kiratakip.app",
     "productName": "Kira Takip",
+    "asar": false,
     "directories": {
       "output": "dist"
     },
@@ -25,15 +29,25 @@
     "files": [
       "electron/**/*",
       ".next/standalone/**/*",
+      "!.next/standalone/**/node_modules/.bin",
       ".next/static/**/*",
       "public/**/*",
       "package.json"
     ],
     "win": {
-      "target": "dir"
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "mac": {
-      "target": "dmg"
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "category": "public.app-category.business"
     }
   },
   "dependencies": {

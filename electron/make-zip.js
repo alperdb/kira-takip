@@ -8,14 +8,20 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs   = require('fs');
 
-const root      = path.join(__dirname, '..');
-const unpacked  = path.join(root, 'dist', 'win-unpacked');
-const outputZip = path.join(root, 'dist', 'KiraTakip-portable.zip');
+const root = path.join(__dirname, '..');
 
-if (!fs.existsSync(unpacked)) {
-  console.error('win-unpacked directory not found. Run electron-builder --dir first.');
+// electron-builder --dir outputs to platform-specific directories
+const candidates = ['win-unpacked', 'mac', 'mac-arm64', 'mac-x64', 'linux-unpacked'];
+const unpacked = candidates
+  .map(c => path.join(root, 'dist', c))
+  .find(p => fs.existsSync(p));
+
+if (!unpacked) {
+  console.error('No unpacked build directory found in dist/. Run electron-builder --dir first.');
   process.exit(1);
 }
+
+const outputZip = path.join(root, 'dist', 'KiraTakip-portable.zip');
 
 if (fs.existsSync(outputZip)) fs.unlinkSync(outputZip);
 

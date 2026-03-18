@@ -5,6 +5,8 @@ import path from 'path';
 const SQLITE_MAGIC = Buffer.from('SQLite format 3\x00');
 
 function getDbPath(): string {
+  // ELECTRON_DB_PATH is set by electron/main.js — always correct in packaged builds
+  if (process.env.ELECTRON_DB_PATH) return process.env.ELECTRON_DB_PATH;
   const url = process.env.DATABASE_URL ?? '';
   const filePath = url.replace(/^file:/, '');
   return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);

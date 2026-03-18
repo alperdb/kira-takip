@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx prisma *)",
+      "Bash(node electron/*.js)",
+      "Bash(rm -rf dist*)",
+      "Bash(rm -rf .next*)",
+      "Bash(mkdir -p *)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git push --force*)",
+      "Bash(rm * prisma/dev.db*)",
+      "Bash(rm * kira.db*)"
+    ]
+  }
+}
