@@ -1,12 +1,18 @@
 export const dynamic = 'force-dynamic';
 
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { Card, PageHeader } from '@/components/ui';
 import AddForm from '@/components/AddForm';
 import OwnersTable from './OwnersTable';
 
 export default async function OwnersPage() {
-  const owners = await prisma.owner.findMany({
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
+  const owners = await db.owner.findMany({
     include: { _count: { select: { properties: true } } },
     orderBy: { createdAt: 'desc' },
   });

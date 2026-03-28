@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -12,7 +13,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 export async function GET() {
   try {
-    const charges = await prisma.rentCharge.findMany({
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
+    const charges = await db.rentCharge.findMany({
       include: {
         tenant:   { select: { name: true } },
         unit:     { select: { unitNo: true, property: { select: { title: true } } } },

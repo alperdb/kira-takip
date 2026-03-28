@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 const METHOD_LABELS: Record<string, string> = {
   cash:  'Nakit',
@@ -11,13 +12,17 @@ const METHOD_LABELS: Record<string, string> = {
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { searchParams } = new URL(req.url);
     const from       = searchParams.get('from');
     const to         = searchParams.get('to');
     const tenantId   = searchParams.get('tenantId');
     const propertyId = searchParams.get('propertyId');
 
-    const payments = await prisma.payment.findMany({
+    const payments = await db.payment.findMany({
       where: {
         ...(from || to ? {
           paidAt: {

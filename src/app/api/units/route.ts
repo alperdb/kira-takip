@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { searchParams } = new URL(req.url);
     const propertyId = searchParams.get('property_id');
     const status     = searchParams.get('status');
 
-    const units = await prisma.unit.findMany({
+    const units = await db.unit.findMany({
       where: {
         ...(propertyId ? { propertyId: Number(propertyId) } : {}),
         ...(status     ? { status: status as 'vacant' | 'occupied' | 'maintenance' } : {}),
@@ -33,6 +38,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const body = await req.json();
     const { propertyId, unitNo, floor, type, grossSqm, netSqm } = body;
 
@@ -40,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'propertyId ve unitNo zorunlu' }, { status: 400 });
     }
 
-    const unit = await prisma.unit.create({
+    const unit = await db.unit.create({
       data: {
         propertyId: Number(propertyId),
         unitNo: unitNo.trim(),

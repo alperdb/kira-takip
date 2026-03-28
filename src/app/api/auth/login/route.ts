@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { authPrisma } from '@/lib/auth-db';
+import { ensureUserDb } from '@/lib/user-db';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { SESSION_COOKIE, SESSION_TTL_MS } from '@/lib/auth';
@@ -8,12 +9,13 @@ import { SESSION_COOKIE, SESSION_TTL_MS } from '@/lib/auth';
 // Allows `npm run dev` to work without running through the setup wizard every time.
 // Credentials: admin / admin123  — local dev convenience, not shipped to end users.
 async function devSeedDefaultAdmin() {
-  const count = await prisma.user.count();
+  const count = await authPrisma.user.count();
   if (count === 0) {
     const hash = await bcrypt.hash('admin123', 12);
-    await prisma.user.create({
+    const user = await authPrisma.user.create({
       data: { username: 'admin', passwordHash: hash, role: 'admin' },
     });
+    await ensureUserDb(user.id);
   }
 }
 
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı adı ve şifre gerekli' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await authPrisma.user.findUnique({ where: { username } });
     if (!user) {
       return NextResponse.json({ error: 'Kullanıcı adı veya şifre hatalı' }, { status: 401 });
     }
@@ -40,14 +42,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Clean expired sessions for this user
-    await prisma.session.deleteMany({
+    await authPrisma.session.deleteMany({
       where: { userId: user.id, expiresAt: { lt: new Date() } },
     });
 
     // Create new session
     const token     = randomUUID();
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-    await prisma.session.create({ data: { id: token, userId: user.id, expiresAt } });
+    await authPrisma.session.create({ data: { id: token, userId: user.id, expiresAt } });
 
     const res = NextResponse.json({ ok: true, username: user.username, role: user.role });
     res.cookies.set(SESSION_COOKIE, token, {

@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -18,7 +20,11 @@ const COLS = [
 ];
 
 export default async function TenantsPage() {
-  const tenants = await prisma.tenant.findMany({
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
+  const tenants = await db.tenant.findMany({
     include: { _count: { select: { contracts: true } } },
     orderBy: { createdAt: 'desc' },
   });

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { searchParams } = new URL(req.url);
     const year = Number(searchParams.get('year') ?? new Date().getFullYear());
 
@@ -10,7 +15,7 @@ export async function GET(req: NextRequest) {
     const to   = new Date(`${year}-12-31T23:59:59`);
 
     // Monthly rent charges
-    const chargeGroups = await prisma.rentCharge.groupBy({
+    const chargeGroups = await db.rentCharge.groupBy({
       by: ['periodStart'],
       where: { periodStart: { gte: from, lte: to } },
       _sum: { chargeAmount: true, paidAmount: true },
@@ -18,7 +23,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Monthly expenses
-    const expenseGroups = await prisma.expense.groupBy({
+    const expenseGroups = await db.expense.groupBy({
       by: ['date'],
       where: { date: { gte: from, lte: to } },
       _sum: { amount: true },

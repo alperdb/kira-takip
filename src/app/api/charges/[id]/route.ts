@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
-    const charge = await prisma.rentCharge.findUnique({
+    const charge = await db.rentCharge.findUnique({
       where: { id: Number(id) },
       include: {
         payments: { orderBy: { paidAt: 'asc' } },
@@ -23,12 +27,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const chargeId = Number(id);
     if (isNaN(chargeId)) {
       return NextResponse.json({ error: 'Geçersiz id' }, { status: 400 });
     }
-    const charge = await prisma.rentCharge.findUnique({
+    const charge = await db.rentCharge.findUnique({
       where: { id: chargeId },
       include: { _count: { select: { payments: true } } },
     });
@@ -42,7 +49,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       );
     }
 
-    await prisma.rentCharge.delete({ where: { id: chargeId } });
+    await db.rentCharge.delete({ where: { id: chargeId } });
 
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
@@ -53,11 +60,14 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 // Tahakkuku sil değil, waived yap
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id }  = await params;
     const body = await req.json().catch(() => ({}));
     const { notes } = body;
 
-    const existing = await prisma.rentCharge.findUnique({ where: { id: Number(id) } });
+    const existing = await db.rentCharge.findUnique({ where: { id: Number(id) } });
     if (!existing) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
     if (existing.status === 'paid') {
       return NextResponse.json({ error: 'Ödenmiş alacaklar iptal edilemez' }, { status: 409 });
@@ -69,7 +79,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
     }
 
-    const charge = await prisma.rentCharge.update({
+    const charge = await db.rentCharge.update({
       where: { id: Number(id) },
       data:  { status: 'waived', notes },
     });

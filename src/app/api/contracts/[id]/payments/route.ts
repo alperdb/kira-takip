@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { applyPayment } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
@@ -7,10 +8,13 @@ type Params = { params: Promise<{ id: string }> };
 /** GET /api/contracts/[id]/payments — open balance summary */
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const contractId = Number(id);
 
-    const openCharges = await prisma.rentCharge.findMany({
+    const openCharges = await db.rentCharge.findMany({
       where: { contractId, status: { in: ['pending', 'partial', 'overdue'] } },
       select: { chargeAmount: true, paidAmount: true, status: true, dueDate: true },
       orderBy: { dueDate: 'asc' },
@@ -29,6 +33,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 /** POST /api/contracts/[id]/payments — apply FIFO payment across contract */
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const contractId = Number(id);
     const { amount, method, referenceNo, notes, paidAt } = await req.json();
@@ -37,7 +44,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Geçerli bir tutar girin' }, { status: 400 });
     }
 
-    const contract = await prisma.contract.findUnique({ where: { id: contractId } });
+    const contract = await db.contract.findUnique({ where: { id: contractId } });
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
     const result = await applyPayment(

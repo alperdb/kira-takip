@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function POST() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     // Sıralı silme — foreign key kısıtları nedeniyle alt tablolar önce
-    await prisma.$transaction([
-      prisma.payment.deleteMany(),
-      prisma.rentCharge.deleteMany(),
-      prisma.contractIncrease.deleteMany(),
-      prisma.depositTransaction.deleteMany(),
-      prisma.contract.deleteMany(),
-      prisma.expense.deleteMany(),
-      prisma.tenant.deleteMany(),
-      prisma.unit.deleteMany(),
-      prisma.property.deleteMany(),
-      prisma.owner.deleteMany(),
-      prisma.exchangeRate.deleteMany(),
+    await db.$transaction([
+      db.payment.deleteMany(),
+      db.rentCharge.deleteMany(),
+      db.contractIncrease.deleteMany(),
+      db.depositTransaction.deleteMany(),
+      db.contract.deleteMany(),
+      db.expense.deleteMany(),
+      db.tenant.deleteMany(),
+      db.unit.deleteMany(),
+      db.property.deleteMany(),
+      db.owner.deleteMany(),
+      db.exchangeRate.deleteMany(),
     ]);
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

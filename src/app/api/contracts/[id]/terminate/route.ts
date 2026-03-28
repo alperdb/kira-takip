@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const { terminationDate, terminationReason } = await req.json();
 
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: Number(id) },
     });
     if (!contract) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
@@ -16,8 +20,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Sadece aktif sözleşme sonlandırılabilir' }, { status: 400 });
     }
 
-    const [updated] = await prisma.$transaction([
-      prisma.contract.update({
+    const [updated] = await db.$transaction([
+      db.contract.update({
         where: { id: Number(id) },
         data: {
           status:            'terminated',
@@ -26,7 +30,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       }),
       // Unit'i boşalt
-      prisma.unit.update({
+      db.unit.update({
         where: { id: contract.unitId },
         data:  { status: 'vacant' },
       }),

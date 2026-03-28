@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { getEffectiveRentAmount } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const contractId = Number(id);
 
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
     }
 
-    const old = await prisma.contract.findUnique({ where: { id: contractId } });
+    const old = await db.contract.findUnique({ where: { id: contractId } });
     if (!old) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
     if (old.status !== 'active') {
       return NextResponse.json({ error: 'Sadece aktif sözleşme yenilenebilir' }, { status: 400 });
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     // Çakışma kontrolü: aynı unit'te yeni dönemle örtüşen başka aktif sözleşme var mı?
-    const overlap = await prisma.contract.findFirst({
+    const overlap = await db.contract.findFirst({
       where: {
         id:     { not: contractId },
         unitId: old.unitId,
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
-    const renewed = await prisma.$transaction(async (tx) => {
+    const renewed = await db.$transaction(async (tx) => {
       // Eski sözleşmeyi kapat
       await tx.contract.update({
         where: { id: contractId },

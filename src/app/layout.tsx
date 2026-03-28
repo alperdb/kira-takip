@@ -21,13 +21,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className={inter.variable}>
+      {/*
+        Three-layer structure:
+          Layer 1 — body (var(--bg), darkest, shows as gap around floating panel)
+          Layer 2 — .sb-panel inside Sidebar (floating nav object)
+          Layer 3 — content area (var(--surface) topbar + var(--bg) main)
+      */}
       <body style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-        {/* Route-change progress bar — 3px line at the very top */}
         <ProgressBar />
 
         <Sidebar />
 
-        {/* Main content shifts with sidebar via CSS variable --sidebar-w */}
+        {/* Content area — shifts right by sidebar width (includes float gap) */}
         <div style={{
           marginLeft: 'var(--sidebar-w)',
           transition: 'margin-left 0.25s ease',

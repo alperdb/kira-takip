@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/db';
+import { notFound, redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { Card, PageHeader, Badge } from '@/components/ui';
 import { RentIncreaseForm } from './RentIncreaseForm';
 import { ContractRenewForm } from './ContractRenewForm';
@@ -19,8 +20,12 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function ContractDetailPage({ params }: Params) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
   const { id } = await params;
-  const contract = await prisma.contract.findUnique({
+  const contract = await db.contract.findUnique({
     where: { id: Number(id) },
     include: {
       unit:      { select: { unitNo: true, property: { select: { title: true } } } },

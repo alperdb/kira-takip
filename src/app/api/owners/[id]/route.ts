@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
-    const owner = await prisma.owner.findUnique({
+    const owner = await db.owner.findUnique({
       where: { id: Number(id) },
       include: { properties: { include: { _count: { select: { units: true } } } } },
     });
@@ -19,11 +24,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
     const body = await req.json();
     const { name, phone, email, nationalId, address, notes } = body;
 
-    const owner = await prisma.owner.update({
+    const owner = await db.owner.update({
       where: { id: Number(id) },
       data: { name, phone, email, nationalId, address, notes },
     });
@@ -35,8 +44,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
-    const owner = await prisma.owner.findUnique({
+    const owner = await db.owner.findUnique({
       where: { id: Number(id) },
       include: { _count: { select: { properties: true } } },
     });
@@ -47,7 +60,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
         { status: 409 },
       );
     }
-    await prisma.owner.delete({ where: { id: Number(id) } });
+    await db.owner.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

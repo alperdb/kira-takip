@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 const METHOD_LABELS: Record<string, string> = {
@@ -12,7 +13,11 @@ const METHOD_LABELS: Record<string, string> = {
 
 export async function GET() {
   try {
-    const payments = await prisma.payment.findMany({
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
+    const payments = await db.payment.findMany({
       include: {
         rentCharge: {
           select: {

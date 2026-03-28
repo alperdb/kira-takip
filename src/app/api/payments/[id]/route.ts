@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { computeChargeStatus } from '@/lib/chargeStatus';
 
 type Params = { params: Promise<{ id: string }> };
@@ -7,8 +8,12 @@ type Params = { params: Promise<{ id: string }> };
 // Ödeme iptal — sadece 24 saat içinde
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
-    const payment = await prisma.payment.findUnique({ where: { id: Number(id) } });
+    const payment = await db.payment.findUnique({ where: { id: Number(id) } });
     if (!payment) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
 
     const hoursSince = (Date.now() - payment.createdAt.getTime()) / 1000 / 3600;
@@ -21,10 +26,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
     const amount = Number(payment.amount);
 
-    await prisma.$transaction([
-      prisma.payment.delete({ where: { id: Number(id) } }),
+    await db.$transaction([
+      db.payment.delete({ where: { id: Number(id) } }),
       // paidAmount ve status'u geri al
-      prisma.rentCharge.update({
+      db.rentCharge.update({
         where: { id: payment.rentChargeId },
         data: {
           paidAmount: { decrement: amount },
@@ -34,11 +39,11 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     ]);
 
     // Status'u shared utility ile yeniden hesapla (waived ise dokunma)
-    const updated = await prisma.rentCharge.findUnique({ where: { id: payment.rentChargeId } });
+    const updated = await db.rentCharge.findUnique({ where: { id: payment.rentChargeId } });
     if (updated && updated.status !== 'waived') {
       const paid   = Math.max(0, Number(updated.paidAmount));
       const status = computeChargeStatus(paid, Number(updated.chargeAmount), updated.dueDate);
-      await prisma.rentCharge.update({
+      await db.rentCharge.update({
         where: { id: updated.id },
         data:  { status },
       });

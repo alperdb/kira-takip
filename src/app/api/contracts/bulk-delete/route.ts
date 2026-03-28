@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { ids } = await req.json();
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
 
     // Load all selected contracts with payment-existence check
-    const contracts = await prisma.contract.findMany({
+    const contracts = await db.contract.findMany({
       where: { id: { in: ids } },
       select: {
         id:     true,
@@ -47,12 +51,12 @@ export async function POST(req: NextRequest) {
     if (toTerminate.length > 0) {
       const terminateIds = toTerminate.map(c => c.id);
       const unitIds      = [...new Set(toTerminate.map(c => c.unitId))];
-      await prisma.$transaction([
-        prisma.contract.updateMany({
+      await db.$transaction([
+        db.contract.updateMany({
           where: { id: { in: terminateIds } },
           data:  { status: 'terminated', terminationDate: new Date() },
         }),
-        prisma.unit.updateMany({
+        db.unit.updateMany({
           where: { id: { in: unitIds } },
           data:  { status: 'vacant' },
         }),
@@ -61,11 +65,11 @@ export async function POST(req: NextRequest) {
 
     if (toDelete.length > 0) {
       const deleteIds = toDelete.map(c => c.id);
-      await prisma.$transaction([
-        prisma.rentCharge.deleteMany({ where: { contractId: { in: deleteIds } } }),
-        prisma.contractIncrease.deleteMany({ where: { contractId: { in: deleteIds } } }),
-        prisma.depositTransaction.deleteMany({ where: { contractId: { in: deleteIds } } }),
-        prisma.contract.deleteMany({ where: { id: { in: deleteIds } } }),
+      await db.$transaction([
+        db.rentCharge.deleteMany({ where: { contractId: { in: deleteIds } } }),
+        db.contractIncrease.deleteMany({ where: { contractId: { in: deleteIds } } }),
+        db.depositTransaction.deleteMany({ where: { contractId: { in: deleteIds } } }),
+        db.contract.deleteMany({ where: { id: { in: deleteIds } } }),
       ]);
     }
 

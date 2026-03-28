@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 const THRESHOLDS = [30, 60, 90] as const;
 
 export async function GET(_req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const now = new Date();
 
-    const contracts = await prisma.contract.findMany({
+    const contracts = await db.contract.findMany({
       where: {
         status: 'active',
         endDate: { not: null },

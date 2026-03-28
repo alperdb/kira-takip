@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { getEffectiveRentAmount } from '@/lib/charges';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const today    = new Date();
     const todayDay = today.getDate();
     const year     = today.getFullYear();
     const month    = today.getMonth();
 
-    const contracts = await prisma.contract.findMany({
+    const contracts = await db.contract.findMany({
       where: { status: 'active' },
       select: {
         id:         true,
@@ -38,7 +42,7 @@ export async function GET() {
         const periodStart = new Date(nextDate.getFullYear(), nextDate.getMonth(), 1);
         const periodEnd   = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 1);
 
-        const existingCharge = await prisma.rentCharge.findFirst({
+        const existingCharge = await db.rentCharge.findFirst({
           where: { contractId: c.id, periodStart: { gte: periodStart, lt: periodEnd } },
           select: { id: true, status: true, chargeAmount: true, paidAmount: true },
         });

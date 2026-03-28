@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const now            = new Date();
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
     const [totalAgg, monthlyRaw, revenueRaw, overdueRaw] = await Promise.all([
       // Overall totals
-      prisma.rentCharge.aggregate({
+      db.rentCharge.aggregate({
         _sum: { chargeAmount: true, paidAmount: true },
       }),
 
       // Monthly alacak + tahsilat (last 12 months)
-      prisma.rentCharge.groupBy({
+      db.rentCharge.groupBy({
         by: ['periodStart'],
         where: { periodStart: { gte: twelveMonthsAgo } },
         _sum: { chargeAmount: true, paidAmount: true },
@@ -23,7 +27,7 @@ export async function GET() {
       }),
 
       // Revenue by building — actual payment records, not charge snapshots
-      prisma.$queryRaw<Array<{ title: string; paid: number | bigint }>>`
+      db.$queryRaw<Array<{ title: string; paid: number | bigint }>>`
         SELECT prop.title, COALESCE(SUM(pay.amount), 0) AS paid
         FROM payments pay
         JOIN rent_charges rc   ON pay.rent_charge_id = rc.id
@@ -35,7 +39,7 @@ export async function GET() {
       `,
 
       // Overdue by building (current snapshot)
-      prisma.$queryRaw<Array<{ title: string; cnt: number | bigint; overdue: number | bigint }>>`
+      db.$queryRaw<Array<{ title: string; cnt: number | bigint; overdue: number | bigint }>>`
         SELECT p.title,
                COUNT(*) AS cnt,
                COALESCE(SUM(CASE WHEN rc.charge_amount > rc.paid_amount THEN rc.charge_amount - rc.paid_amount ELSE 0 END), 0) AS overdue

@@ -1,7 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, Money, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -24,8 +26,12 @@ const COLS = [
 ];
 
 export default async function UnitsPage() {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
   const [units, properties] = await Promise.all([
-    prisma.unit.findMany({
+    db.unit.findMany({
       include: {
         property: { select: { title: true } },
         contracts: {
@@ -36,7 +42,7 @@ export default async function UnitsPage() {
       },
       orderBy: [{ propertyId: 'asc' }, { unitNo: 'asc' }],
     }),
-    prisma.property.findMany({ select: { id: true, title: true }, orderBy: { title: 'asc' } }),
+    db.property.findMany({ select: { id: true, title: true }, orderBy: { title: 'asc' } }),
   ]);
 
   return (

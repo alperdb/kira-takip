@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+  const db = getUserDb(session.id);
+
   const q = (req.nextUrl.searchParams.get('q') ?? '').trim();
   if (q.length < 2) return NextResponse.json({ tenants: [], properties: [], contracts: [] });
 
   const [tenants, properties, contracts] = await Promise.all([
-    prisma.tenant.findMany({
+    db.tenant.findMany({
       where: {
         OR: [
           { name:  { contains: q } },
@@ -17,7 +22,7 @@ export async function GET(req: NextRequest) {
       take: 5,
       select: { id: true, name: true, phone: true },
     }),
-    prisma.property.findMany({
+    db.property.findMany({
       where: {
         OR: [
           { title:    { contains: q } },
@@ -28,7 +33,7 @@ export async function GET(req: NextRequest) {
       take: 5,
       select: { id: true, title: true, city: true, district: true },
     }),
-    prisma.contract.findMany({
+    db.contract.findMany({
       where: {
         status: { in: ['active', 'renewed'] },
         OR: [

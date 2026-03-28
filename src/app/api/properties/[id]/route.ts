@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
-    const property = await prisma.property.findUnique({
+    const property = await db.property.findUnique({
       where: { id: Number(id) },
       include: {
         owner: { select: { id: true, name: true, phone: true } },
@@ -22,9 +27,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
     const { ownerId, title, address, city, district, type } = await req.json();
-    const property = await prisma.property.update({
+    const property = await db.property.update({
       where: { id: Number(id) },
       data: { ownerId: ownerId ? Number(ownerId) : undefined, title, address, city, district, type },
     });
@@ -36,8 +45,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
-    const property = await prisma.property.findUnique({
+    const property = await db.property.findUnique({
       where: { id: Number(id) },
       include: { _count: { select: { units: true } } },
     });
@@ -48,7 +61,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
         { status: 409 },
       );
     }
-    await prisma.property.delete({ where: { id: Number(id) } });
+    await db.property.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

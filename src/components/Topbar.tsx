@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Settings, LogOut, User, ChevronDown, Moon, Sun, Bell, AlertCircle, Clock, FileWarning } from 'lucide-react';
+import { ChevronRight, Settings, LogOut, User, ChevronDown, Moon, Sun, Bell, AlertCircle, Clock, FileWarning, FilePlus, Banknote, CircleDollarSign, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { GlobalSearch } from './GlobalSearch';
 
@@ -202,9 +202,13 @@ function NotificationBell() {
 }
 
 // ── User dropdown ──────────────────────────────────────
+type OtherUser = { id: number; username: string };
+
 function UserDropdown() {
   const [open,     setOpen]     = useState(false);
   const [username, setUsername] = useState('admin');
+  const [userId,   setUserId]   = useState<number | null>(null);
+  const [others,   setOthers]   = useState<OtherUser[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   const { dark, toggle: toggleTheme } = useTheme();
   const router = useRouter();
@@ -212,9 +216,22 @@ function UserDropdown() {
   useEffect(() => {
     fetch('/api/auth/session')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.username) setUsername(d.username); })
+      .then(d => {
+        if (d?.username) setUsername(d.username);
+        if (d?.id) setUserId(d.id);
+      })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!open || userId === null) return;
+    fetch('/api/users')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.users) setOthers((d.users as OtherUser[]).filter(u => u.id !== userId));
+      })
+      .catch(() => {});
+  }, [open, userId]);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -280,6 +297,29 @@ function UserDropdown() {
               label={dark ? 'Açık Tema' : 'Koyu Tema'}
               onClick={toggleTheme}
             />
+
+            {/* Other accounts */}
+            {others.length > 0 && (
+              <>
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                <div style={{ padding: '4px 10px 2px', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--subtle)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Diğer Hesaplar
+                </div>
+                {others.map(u => (
+                  <DropdownItem
+                    key={u.id}
+                    icon={UserRound}
+                    label={u.username}
+                    onClick={async () => {
+                      setOpen(false);
+                      await fetch('/api/auth/logout', { method: 'POST' });
+                      router.push(`/login?user=${encodeURIComponent(u.username)}`);
+                    }}
+                  />
+                ))}
+              </>
+            )}
+
             <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
             <DropdownItem
               icon={LogOut}
@@ -325,6 +365,12 @@ function DropdownItem({ icon: Icon, label, danger, onClick }: {
   );
 }
 
+const PRIMARY_ACTIONS = [
+  { href: '/contracts', label: '+ Sözleşme', icon: FilePlus          },
+  { href: '/payments',  label: '+ Ödeme',    icon: Banknote          },
+  { href: '/charges',   label: '+ Alacak',   icon: CircleDollarSign  },
+];
+
 // ── Topbar ──────────────────────────────────────────────
 export function Topbar() {
   const pathname = usePathname();
@@ -341,10 +387,11 @@ export function Topbar() {
       borderBottom: '1px solid var(--border)',
       display: 'flex', alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: '0 20px 0 24px',
+      gap: 12,
     }}>
-      {/* Breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.875rem' }}>
+      {/* Left: breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', flexShrink: 0 }}>
         {!isRoot && (
           <>
             <span style={{ color: 'var(--subtle)' }}>Kira Takip</span>
@@ -354,8 +401,21 @@ export function Topbar() {
         <span style={{ color: 'var(--text)', fontWeight: 600 }}>{label}</span>
       </div>
 
-      {/* Right side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Right: primary actions + utilities */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+
+        {/* Primary workflow actions */}
+        {PRIMARY_ACTIONS.map(({ href, label: lbl, icon: Icon }) => (
+          <Link key={href} href={href} className="tb-action">
+            <Icon size={13} strokeWidth={2} style={{ flexShrink: 0 }} />
+            {lbl}
+          </Link>
+        ))}
+
+        {/* Separator */}
+        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px', flexShrink: 0 }} />
+
+        {/* Utilities */}
         <GlobalSearch />
         <NotificationBell />
         <UserDropdown />

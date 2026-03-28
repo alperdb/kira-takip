@@ -1,27 +1,32 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const year  = new Date().getFullYear();
     const from  = new Date(`${year}-01-01`);
     const to    = new Date(`${year}-12-31T23:59:59`);
 
     // YTD: actual payments (not receivables)
     const [paymentAgg, expenseAgg, unitStats, overdueCount] = await Promise.all([
-      prisma.payment.aggregate({
+      db.payment.aggregate({
         where: { paidAt: { gte: from, lte: to } },
         _sum:  { amount: true },
       }),
-      prisma.expense.aggregate({
+      db.expense.aggregate({
         where: { date: { gte: from, lte: to } },
         _sum:  { amount: true },
       }),
-      prisma.unit.groupBy({
+      db.unit.groupBy({
         by:     ['status'],
         _count: { _all: true },
       }),
-      prisma.rentCharge.count({ where: { status: 'overdue' } }),
+      db.rentCharge.count({ where: { status: 'overdue' } }),
     ]);
 
     const totalIncome   = Math.round(Number(paymentAgg._sum.amount  ?? 0) * 100) / 100;

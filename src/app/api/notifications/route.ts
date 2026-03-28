@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -10,7 +15,7 @@ export async function GET() {
     const in30 = new Date(today); in30.setDate(today.getDate() + 30);
 
     // 1. Vadesi geçmiş alacaklar (overdue)
-    const overdue = await prisma.rentCharge.findMany({
+    const overdue = await db.rentCharge.findMany({
       where: { status: 'overdue' },
       select: {
         id: true, dueDate: true, chargeAmount: true,
@@ -22,7 +27,7 @@ export async function GET() {
     });
 
     // 2. Yaklaşan ödemeler (7 gün içinde, pending/partial)
-    const upcoming = await prisma.rentCharge.findMany({
+    const upcoming = await db.rentCharge.findMany({
       where: {
         status: { in: ['pending', 'partial'] },
         dueDate: { gte: today, lte: in7 },
@@ -37,7 +42,7 @@ export async function GET() {
     });
 
     // 3. Sözleşme bitiş uyarıları (30 gün içinde)
-    const expiringContracts = await prisma.contract.findMany({
+    const expiringContracts = await db.contract.findMany({
       where: {
         status: 'active',
         endDate: { gte: today, lte: in30 },

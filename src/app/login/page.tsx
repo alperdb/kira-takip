@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
-  const router   = useRouter();
+  const router        = useRouter();
+  const searchParams  = useSearchParams();
   const [username,  setUsername]  = useState('');
   const [password,  setPassword]  = useState('');
   const [error,     setError]     = useState('');
@@ -16,9 +17,15 @@ export default function LoginPage() {
   useEffect(() => {
     fetch('/api/auth/setup-status')
       .then(r => r.json())
-      .then(d => { if (d.needsSetup) router.replace('/setup'); else setChecking(false); })
+      .then(d => {
+        if (d.needsSetup) { router.replace('/setup'); return; }
+        // Pre-fill username from ?user= param (account switching)
+        const prefill = searchParams.get('user');
+        if (prefill) setUsername(prefill);
+        setChecking(false);
+      })
       .catch(() => setChecking(false));
-  }, [router]);
+  }, [router, searchParams]);
 
   if (checking) return (
     <div style={{

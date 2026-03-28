@@ -1,21 +1,20 @@
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/db';
-
-export const SESSION_COOKIE = 'kira_session';
-export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+import { authPrisma } from '@/lib/auth-db';
+import { SESSION_COOKIE } from '@/lib/auth-constants';
+export { SESSION_COOKIE, SESSION_TTL_MS } from '@/lib/auth-constants';
 
 export async function getSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const session = await prisma.session.findUnique({
+  const session = await authPrisma.session.findUnique({
     where: { id: token },
     include: { user: { select: { id: true, username: true, role: true } } },
   });
 
   if (!session || session.expiresAt < new Date()) {
-    if (session) await prisma.session.delete({ where: { id: token } }).catch(() => {});
+    if (session) await authPrisma.session.delete({ where: { id: token } }).catch(() => {});
     return null;
   }
 

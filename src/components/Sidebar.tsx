@@ -13,41 +13,38 @@ import {
 const GROUPS = [
   {
     label: 'Genel',
-    items: [
-      { href: '/',           label: 'Dashboard',   icon: LayoutDashboard },
-    ],
+    items: [{ href: '/', label: 'Dashboard', icon: LayoutDashboard }],
   },
   {
     label: 'Portföy',
     items: [
-      { href: '/owners',     label: 'Sahipler',    icon: Users           },
-      { href: '/properties', label: 'Binalar',     icon: Building2       },
-      { href: '/units',      label: 'Daireler',    icon: DoorOpen        },
+      { href: '/owners',     label: 'Sahipler', icon: Users     },
+      { href: '/properties', label: 'Binalar',  icon: Building2 },
+      { href: '/units',      label: 'Daireler', icon: DoorOpen  },
     ],
   },
   {
     label: 'Kiralama',
     items: [
-      { href: '/tenants',    label: 'Kiracılar',   icon: UserCheck       },
-      { href: '/contracts',  label: 'Sözleşmeler', icon: FileText        },
-      { href: '/charges',    label: 'Alacaklar',   icon: Receipt         },
+      { href: '/tenants',   label: 'Kiracılar',   icon: UserCheck },
+      { href: '/contracts', label: 'Sözleşmeler', icon: FileText  },
+      { href: '/charges',   label: 'Alacaklar',   icon: Receipt   },
     ],
   },
   {
     label: 'Finans',
     items: [
-      { href: '/payments',   label: 'Ödemeler',    icon: CreditCard      },
-      { href: '/expenses',   label: 'Giderler',    icon: TrendingDown    },
-      { href: '/reports',    label: 'Raporlar',    icon: BarChart3       },
+      { href: '/payments',  label: 'Ödemeler', icon: CreditCard   },
+      { href: '/expenses',  label: 'Giderler', icon: TrendingDown },
+      { href: '/reports',   label: 'Raporlar', icon: BarChart3    },
     ],
   },
 ];
 
 export function Sidebar() {
-  const pathname   = usePathname();
+  const pathname  = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Restore from localStorage after hydration
   useEffect(() => {
     if (pathname === '/login' || pathname === '/setup') return;
     try {
@@ -66,122 +63,91 @@ export function Sidebar() {
     try { localStorage.setItem('sidebar-collapsed', next ? '1' : '0'); } catch { /* ignore */ }
   }
 
-  const w = collapsed ? 56 : 240;
-
   return (
-    <aside style={{
-      position: 'fixed', top: 0, left: 0, bottom: 0,
-      width: w, zIndex: 50,
-      background: 'var(--sidebar)',
-      borderRight: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column',
-      transition: 'width 0.25s ease',
-      overflow: 'hidden',
-    }}>
+    /* Outer: transparent wrapper — app background shows through, creates float */
+    <aside className="sb-outer">
 
-      {/* ── Logo ── */}
-      <div style={{
-        padding: collapsed ? '16px 12px' : '20px 16px 16px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center',
-        gap: collapsed ? 0 : 10,
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        transition: 'padding 0.25s ease',
-      }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: 'var(--primary)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Building2 size={15} color="#fff" strokeWidth={2.5} />
+      {/* The floating panel itself */}
+      <div className="sb-panel">
+
+        {/* ── Brand header ─────────────────────── */}
+        <div className={`sb-header${collapsed ? ' collapsed' : ''}`}>
+          <div className="sb-brand-mark">
+            <Building2 size={13} color="#fff" strokeWidth={2.5} />
+          </div>
+          {!collapsed && (
+            <>
+              <div className="sb-brand-text">
+                <span className="sb-brand-name">Kira Takip</span>
+                <span className="sb-brand-sub">Mülk Yönetimi</span>
+              </div>
+              <button onClick={toggle} className="sb-toggle" title="Daralt">
+                <PanelLeftClose size={13} strokeWidth={1.75} />
+              </button>
+            </>
+          )}
         </div>
-        {!collapsed && (
-          <div>
-            <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-              Kira Takip
+
+        {/* ── Navigation ───────────────────────── */}
+        <nav className="sb-nav">
+          {GROUPS.map((group, i) => (
+            <div key={group.label} className="sb-group">
+              {!collapsed && (
+                <span className="sb-group-label">{group.label}</span>
+              )}
+              {collapsed && i > 0 && <div style={{ height: 8 }} />}
+
+              {group.items.map(({ href, label, icon: Icon }) => {
+                const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    title={collapsed ? label : undefined}
+                    className={`sb-item${active ? ' active' : ''}`}
+                    style={{
+                      justifyContent: collapsed ? 'center' : 'flex-start',
+                      padding:        collapsed ? '9px 0' : '7px 10px',
+                    }}
+                  >
+                    <Icon size={15} strokeWidth={active ? 2.5 : 1.75} style={{ flexShrink: 0 }} />
+                    {!collapsed && <span>{label}</span>}
+                  </Link>
+                );
+              })}
             </div>
-            <div style={{ fontSize: '0.6875rem', color: 'var(--subtle)', fontWeight: 500, marginTop: 1 }}>
-              Mülk Yönetimi
-            </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </nav>
 
-      {/* ── Nav ── */}
-      <nav style={{
-        flex: 1, padding: '8px',
-        display: 'flex', flexDirection: 'column', gap: 0,
-        overflowY: 'auto', overflowX: 'hidden',
-      }}>
-        {GROUPS.map((group) => (
-          <div key={group.label} style={{ marginBottom: 2 }}>
-            {!collapsed && (
-              <p style={{
-                fontSize: '0.6875rem', fontWeight: 600, color: 'var(--subtle)',
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                padding: '10px 8px 4px',
-              }}>
-                {group.label}
-              </p>
-            )}
-            {collapsed && <div style={{ height: 8 }} />}
+        {/* ── Footer ───────────────────────────── */}
+        <div className="sb-footer">
+          <Link
+            href="/settings"
+            title={collapsed ? 'Ayarlar' : undefined}
+            className={`sb-item sb-footer-item${pathname === '/settings' ? ' active' : ''}`}
+            style={{
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding:        collapsed ? '8px 0' : '7px 10px',
+            }}
+          >
+            <Settings size={14} strokeWidth={1.75} style={{ flexShrink: 0 }} />
+            {!collapsed && <span>Ayarlar</span>}
+          </Link>
 
-            {group.items.map(({ href, label, icon: Icon }) => {
-              const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  title={collapsed ? label : undefined}
-                  className={`sidebar-link${active ? ' active' : ''}`}
-                  style={{
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    padding: collapsed ? '10px' : '8px 10px',
-                  }}
-                >
-                  <Icon size={15} strokeWidth={active ? 2.5 : 2} style={{ flexShrink: 0 }} />
-                  {!collapsed && label}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
-
-      {/* ── Footer ── */}
-      <div style={{ padding: '8px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {/* Settings */}
-        <Link
-          href="/settings"
-          className={`sidebar-link${pathname === '/settings' ? ' active' : ''}`}
-          style={{
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '10px' : '8px 10px',
-          }}
-          title={collapsed ? 'Ayarlar' : undefined}
-        >
-          <Settings size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
-          {!collapsed && 'Ayarlar'}
-        </Link>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={toggle}
-          className="sidebar-link"
-          style={{
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '10px' : '8px 10px',
-            width: '100%', border: 'none', cursor: 'pointer',
-          }}
-          title={collapsed ? 'Genişlet' : 'Daralt'}
-        >
-          {collapsed
-            ? <PanelLeftOpen  size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
-            : <PanelLeftClose size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
-          }
-          {!collapsed && 'Daralt'}
-        </button>
+          {collapsed && (
+            <button
+              onClick={toggle}
+              className="sb-item sb-footer-item"
+              title="Genişlet"
+              style={{
+                justifyContent: 'center', padding: '8px 0',
+                width: '100%', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <PanelLeftOpen size={13} strokeWidth={1.75} />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
-    const transactions = await prisma.depositTransaction.findMany({
+    const transactions = await db.depositTransaction.findMany({
       where:   { contractId: Number(id) },
       orderBy: { date: 'asc' },
     });
@@ -18,6 +22,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const { type, amount, date, notes } = await req.json();
 
@@ -25,7 +32,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'type, amount, date zorunlu' }, { status: 400 });
     }
 
-    const contract = await prisma.contract.findUnique({ where: { id: Number(id) } });
+    const contract = await db.contract.findUnique({ where: { id: Number(id) } });
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
     // Depozito durumunu güncelle
@@ -37,8 +44,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       forfeited:       'forfeited',
     };
 
-    const [transaction] = await prisma.$transaction([
-      prisma.depositTransaction.create({
+    const [transaction] = await db.$transaction([
+      db.depositTransaction.create({
         data: {
           contractId: Number(id),
           type,
@@ -47,7 +54,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           notes,
         },
       }),
-      prisma.contract.update({
+      db.contract.update({
         where: { id: Number(id) },
         data:  { depositStatus: depositStatusMap[type] ?? 'held' },
       }),

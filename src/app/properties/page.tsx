@@ -1,7 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { Card, PageHeader, DataTable, Td, TRow, Badge, EmptyState } from '@/components/ui';
 import AddForm from '@/components/AddForm';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -23,15 +25,19 @@ const COLS = [
 ];
 
 export default async function PropertiesPage() {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
   const [properties, owners] = await Promise.all([
-    prisma.property.findMany({
+    db.property.findMany({
       include: {
         owner: { select: { name: true } },
         _count: { select: { units: true } },
       },
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.owner.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    db.owner.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
   return (

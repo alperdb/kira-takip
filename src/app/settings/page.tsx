@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, FormEvent } from 'react';
-import { Trash2, Download, Upload, AlertTriangle } from 'lucide-react';
+import { Trash2, Download, Upload, AlertTriangle, UserPlus, KeyRound } from 'lucide-react';
 import {
   Card, PageHeader, Btn,
   Modal, ModalBody, ModalFooter,
@@ -279,6 +279,214 @@ function ResetSection() {
   );
 }
 
+// ── Users ─────────────────────────────────────────────────────
+type UserRow = { id: number; username: string; role: string; createdAt: string };
+
+function UsersSection() {
+  const [users,       setUsers]       = useState<UserRow[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [addOpen,     setAddOpen]     = useState(false);
+  const [pwOpen,      setPwOpen]      = useState(false);
+  const [deleteOpen,  setDeleteOpen]  = useState(false);
+  const [target,      setTarget]      = useState<UserRow | null>(null);
+  const [addForm,     setAddForm]     = useState({ username: '', password: '', confirm: '' });
+  const [pwForm,      setPwForm]      = useState({ password: '', confirm: '' });
+  const [busy,        setBusy]        = useState(false);
+
+  async function load() {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const d = await res.json();
+      setUsers(d.users ?? []);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault();
+    if (addForm.password !== addForm.confirm) { toast.error('Şifreler eşleşmiyor'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: addForm.username, password: addForm.password }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Hata');
+      toast.success('Kullanıcı oluşturuldu');
+      setAddOpen(false);
+      setAddForm({ username: '', password: '', confirm: '' });
+      load();
+    } catch (e: unknown) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  }
+
+  async function handleDelete() {
+    if (!target) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/users/${target.id}`, { method: 'DELETE' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Hata');
+      toast.success('Kullanıcı silindi');
+      setDeleteOpen(false);
+      setTarget(null);
+      load();
+    } catch (e: unknown) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  }
+
+  async function handlePw(e: FormEvent) {
+    e.preventDefault();
+    if (!target) return;
+    if (pwForm.password !== pwForm.confirm) { toast.error('Şifreler eşleşmiyor'); return; }
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/users/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwForm.password }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Hata');
+      toast.success('Şifre güncellendi');
+      setPwOpen(false);
+      setPwForm({ password: '', confirm: '' });
+      setTarget(null);
+    } catch (e: unknown) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <>
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+        <Btn onClick={() => setAddOpen(true)}>
+          <UserPlus size={14} />
+          Kullanıcı Ekle
+        </Btn>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.875rem' }}>
+          Yükleniyor...
+        </div>
+      ) : users.length === 0 ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.875rem' }}>
+          Kullanıcı yok
+        </div>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {['Kullanıcı Adı', 'Rol', 'Oluşturma Tarihi', ''].map(h => (
+                <th key={h} style={{
+                  textAlign: h === '' ? 'right' : 'left',
+                  padding: '10px 24px',
+                  fontWeight: 600, fontSize: '0.75rem',
+                  color: 'var(--muted)',
+                  whiteSpace: 'nowrap',
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '12px 24px', color: 'var(--text)', fontWeight: 500 }}>{u.username}</td>
+                <td style={{ padding: '12px 24px', color: 'var(--muted)' }}>{u.role}</td>
+                <td style={{ padding: '12px 24px', color: 'var(--muted)' }}>
+                  {new Date(u.createdAt).toLocaleDateString('tr-TR')}
+                </td>
+                <td style={{ padding: '12px 24px', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <Btn variant="ghost" style={{ height: 28, padding: '0 8px', fontSize: '0.8125rem' }}
+                      onClick={() => { setTarget(u); setPwForm({ password: '', confirm: '' }); setPwOpen(true); }}
+                    >
+                      <KeyRound size={13} />
+                      Şifre
+                    </Btn>
+                    <Btn variant="ghost" style={{ height: 28, padding: '0 8px', fontSize: '0.8125rem', color: 'var(--red)' }}
+                      onClick={() => { setTarget(u); setDeleteOpen(true); }}
+                    >
+                      <Trash2 size={13} />
+                      Sil
+                    </Btn>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Add user modal */}
+      <Modal open={addOpen} onClose={() => { setAddOpen(false); setAddForm({ username: '', password: '', confirm: '' }); }} title="Kullanıcı Ekle" width={400}>
+        <form onSubmit={handleAdd}>
+          <ModalBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label>Kullanıcı Adı</label>
+                <input value={addForm.username} onChange={e => setAddForm(f => ({ ...f, username: e.target.value }))} placeholder="en az 3 karakter" />
+              </div>
+              <div>
+                <label>Şifre</label>
+                <input type="password" value={addForm.password} onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))} placeholder="en az 6 karakter" />
+              </div>
+              <div>
+                <label>Şifre Tekrar</label>
+                <input type="password" value={addForm.confirm} onChange={e => setAddForm(f => ({ ...f, confirm: e.target.value }))} placeholder="şifreyi tekrar girin" />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Btn variant="ghost" type="button" onClick={() => { setAddOpen(false); setAddForm({ username: '', password: '', confirm: '' }); }}>İptal</Btn>
+            <Btn type="submit" disabled={busy}>{busy ? 'Oluşturuluyor...' : 'Oluştur'}</Btn>
+          </ModalFooter>
+        </form>
+      </Modal>
+
+      {/* Change password modal */}
+      <Modal open={pwOpen} onClose={() => { setPwOpen(false); setTarget(null); }} title={`Şifre Değiştir — ${target?.username ?? ''}`} width={400}>
+        <form onSubmit={handlePw}>
+          <ModalBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label>Yeni Şifre</label>
+                <input type="password" value={pwForm.password} onChange={e => setPwForm(f => ({ ...f, password: e.target.value }))} placeholder="en az 6 karakter" />
+              </div>
+              <div>
+                <label>Şifre Tekrar</label>
+                <input type="password" value={pwForm.confirm} onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))} placeholder="şifreyi tekrar girin" />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Btn variant="ghost" type="button" onClick={() => { setPwOpen(false); setTarget(null); }}>İptal</Btn>
+            <Btn type="submit" disabled={busy}>{busy ? 'Kaydediliyor...' : 'Kaydet'}</Btn>
+          </ModalFooter>
+        </form>
+      </Modal>
+
+      {/* Delete confirm modal */}
+      <Modal open={deleteOpen} onClose={() => { setDeleteOpen(false); setTarget(null); }} title="Kullanıcıyı Sil" width={400}>
+        <ModalBody>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text)', lineHeight: 1.6 }}>
+            <strong>{target?.username}</strong> adlı kullanıcı silinecek.
+            Bu kullanıcının aktif oturumları da sonlandırılacak.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Btn variant="ghost" onClick={() => { setDeleteOpen(false); setTarget(null); }}>İptal</Btn>
+          <Btn variant="destructive" onClick={handleDelete} disabled={busy}>{busy ? 'Siliniyor...' : 'Sil'}</Btn>
+        </ModalFooter>
+      </Modal>
+    </>
+  );
+}
+
 // ── Layout helpers ────────────────────────────────────────────
 function SettingRow({
   title, desc, danger, children,
@@ -339,6 +547,18 @@ export default function SettingsPage() {
           <div style={{ height: 1, background: 'var(--border)' }} />
         </div>
         <RestoreSection />
+      </Card>
+
+      <div style={{
+        fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted)',
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+        padding: '0 2px', marginTop: 4,
+      }}>
+        Kullanıcılar
+      </div>
+
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <UsersSection />
       </Card>
 
       <div style={{

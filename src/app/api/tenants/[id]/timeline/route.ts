@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 const TR_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 function fmtMonth(d: Date | string): string {
@@ -9,11 +10,15 @@ function fmtMonth(d: Date | string): string {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
     const tenantId = Number(id);
 
     const [contracts, charges, payments] = await Promise.all([
-      prisma.contract.findMany({
+      db.contract.findMany({
         where: { tenantId },
         select: {
           id: true, startDate: true, endDate: true, status: true,
@@ -21,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         },
         orderBy: { startDate: 'asc' },
       }),
-      prisma.rentCharge.findMany({
+      db.rentCharge.findMany({
         where: { tenantId, status: 'overdue' },
         select: {
           id: true, dueDate: true, chargeAmount: true, periodStart: true,
@@ -30,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         orderBy: { dueDate: 'desc' },
         take: 30,
       }),
-      prisma.payment.findMany({
+      db.payment.findMany({
         where: { rentCharge: { tenantId } },
         select: {
           id: true, amount: true, paidAt: true, method: true,

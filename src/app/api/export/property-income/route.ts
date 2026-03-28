@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { fmtMoney, csvRow } from '@/lib/csv';
 
 export async function GET() {
   try {
-    const properties = await prisma.property.findMany({
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
+    const properties = await db.property.findMany({
       include: {
         units: {
           include: {

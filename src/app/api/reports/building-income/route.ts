@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { searchParams } = new URL(req.url);
     const from = searchParams.get('from');
     const to   = searchParams.get('to');
@@ -11,7 +16,7 @@ export async function GET(req: NextRequest) {
     const dateFrom = from ? new Date(from) : new Date('2000-01-01');
     const dateTo   = to   ? new Date(to + 'T23:59:59') : new Date('2099-12-31');
 
-    const rows = await prisma.$queryRaw<Array<{
+    const rows = await db.$queryRaw<Array<{
       id:             number | bigint;
       title:          string;
       total_charged:  number;

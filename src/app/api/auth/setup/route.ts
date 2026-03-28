@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { authPrisma } from '@/lib/auth-db';
+import { ensureUserDb } from '@/lib/user-db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
     // Only allow setup when no users exist
-    const count = await prisma.user.count();
+    const count = await authPrisma.user.count();
     if (count > 0) {
       return NextResponse.json({ error: 'Kurulum zaten tamamlanmış' }, { status: 409 });
     }
@@ -23,9 +24,10 @@ export async function POST(req: NextRequest) {
     }
 
     const hash = await bcrypt.hash(password, 12);
-    await prisma.user.create({
+    const user = await authPrisma.user.create({
       data: { username: username.trim(), passwordHash: hash, role: 'admin' },
     });
+    await ensureUserDb(user.id);
 
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

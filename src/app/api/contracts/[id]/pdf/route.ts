@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { bindContractData, fillTemplate } from '@/lib/templateEngine';
 import { loadTemplate, generateContractPdf } from '@/lib/contractPdf';
 import { readOfficeSettings } from '@/lib/officeSettings';
@@ -8,6 +9,10 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
     const contractId = Number(id);
 
@@ -15,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Geçersiz ID' }, { status: 400 });
     }
 
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: contractId },
       include: {
         tenant: true,

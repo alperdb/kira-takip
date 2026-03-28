@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { searchParams } = new URL(req.url);
     const status   = searchParams.get('status');
     const unitId   = searchParams.get('unit_id');
     const tenantId = searchParams.get('tenant_id');
 
-    const contracts = await prisma.contract.findMany({
+    const contracts = await db.contract.findMany({
       where: {
         ...(status   ? { status:   status   as 'active' | 'terminated' | 'expired' | 'pending' } : {}),
         ...(unitId   ? { unitId:   Number(unitId) }   : {}),
@@ -33,6 +37,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const body = await req.json();
     const {
       unitId, tenantId, startDate, endDate,
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Aynı unit'te aktif sözleşme var mı?
-    const existing = await prisma.contract.findFirst({
+    const existing = await db.contract.findFirst({
       where: { unitId: Number(unitId), status: 'active' },
     });
     if (existing) {
@@ -79,8 +86,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [contract] = await prisma.$transaction([
-      prisma.contract.create({
+    const [contract] = await db.$transaction([
+      db.contract.create({
         data: {
           unitId:        Number(unitId),
           tenantId:      Number(tenantId),
@@ -94,7 +101,7 @@ export async function POST(req: NextRequest) {
         },
       }),
       // Unit'i occupied yap
-      prisma.unit.update({
+      db.unit.update({
         where: { id: Number(unitId) },
         data:  { status: 'occupied' },
       }),

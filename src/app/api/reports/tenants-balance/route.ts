@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { searchParams } = new URL(req.url);
     const search = (searchParams.get('search') ?? '').trim();
     const status = searchParams.get('status') ?? 'all'; // 'all' | 'overdue' | 'balance'
 
-    const rows = await prisma.$queryRaw<Array<{
+    const rows = await db.$queryRaw<Array<{
       id:               number | bigint;
       name:             string;
       total_charged:    number;

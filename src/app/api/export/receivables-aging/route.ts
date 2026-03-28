@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { fmtDate, fmtMoney, csvRow } from '@/lib/csv';
 
 function agingBucket(days: number): string {
@@ -11,8 +12,12 @@ function agingBucket(days: number): string {
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     // Only overdue receivables
-    const charges = await prisma.rentCharge.findMany({
+    const charges = await db.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {
         tenant:   { select: { name: true, phone: true } },

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { calcRentIncrease, getEffectiveRentAmount } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const contractId = Number(id);
     if (isNaN(contractId)) {
       return NextResponse.json({ error: 'Geçersiz sözleşme id' }, { status: 400 });
     }
-    const increases = await prisma.contractIncrease.findMany({
+    const increases = await db.contractIncrease.findMany({
       where:   { contractId },
       orderBy: { effectiveDate: 'asc' },
     });
@@ -23,6 +27,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const { effectiveDate, increaseType, ratePercent, notes } = await req.json();
 
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     // Sözleşme bul
-    const contract = await prisma.contract.findUnique({ where: { id: contractId } });
+    const contract = await db.contract.findUnique({ where: { id: contractId } });
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
     const oldRent = await getEffectiveRentAmount(contractId, new Date());
@@ -69,8 +76,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { newRent, increaseAmount } = calcRentIncrease(oldRent, rate);
 
     // Transaction: artış kaydı + contract.currentRent güncelle
-    const [increase] = await prisma.$transaction([
-      prisma.contractIncrease.create({
+    const [increase] = await db.$transaction([
+      db.contractIncrease.create({
         data: {
           contractId,
           effectiveDate:  parsedDate,
@@ -82,7 +89,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           notes:          notes ?? null,
         },
       }),
-      prisma.contract.update({
+      db.contract.update({
         where: { id: contractId },
         data:  { currentRent: newRent },
       }),

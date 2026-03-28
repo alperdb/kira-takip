@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { getEffectiveRentAmount } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
+
     const { id } = await params;
     const tenantId = Number(id);
 
@@ -14,7 +19,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Geçersiz ID' }, { status: 400 });
     }
 
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await db.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) return NextResponse.json({ error: 'Kiracı bulunamadı' }, { status: 404 });
 
     const includeArchived = req.nextUrl.searchParams.get('includeArchived') === 'true';
@@ -26,7 +31,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       }),
     };
 
-    const charges = await prisma.rentCharge.findMany({
+    const charges = await db.rentCharge.findMany({
       where: chargeFilter,
       select: { chargeAmount: true, paidAmount: true, status: true },
     });
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const balance          = Math.round((totalReceivables - totalPayments) * 100) / 100;
     const overdueCount     = charges.filter(c => c.status === 'overdue').length;
 
-    const activeContract = await prisma.contract.findFirst({
+    const activeContract = await db.contract.findFirst({
       where: { tenantId, status: 'active' },
       select: {
         id: true,

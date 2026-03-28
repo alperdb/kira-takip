@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: Number(id) },
       include: {
         unit: {
@@ -33,6 +37,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const contractId = Number(id);
     const body = await req.json();
@@ -51,10 +58,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     // If unit is changing, check for conflicts and update unit statuses
     if (unitId !== undefined) {
-      const current = await prisma.contract.findUnique({ where: { id: contractId }, select: { unitId: true } });
+      const current = await db.contract.findUnique({ where: { id: contractId }, select: { unitId: true } });
       if (current && current.unitId !== Number(unitId)) {
         // Prevent moving to a unit that already has an active contract
-        const conflict = await prisma.contract.findFirst({
+        const conflict = await db.contract.findFirst({
           where: { unitId: Number(unitId), status: 'active', id: { not: contractId } },
         });
         if (conflict) {
@@ -63,14 +70,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
             { status: 409 },
           );
         }
-        await prisma.$transaction([
-          prisma.unit.update({ where: { id: current.unitId }, data: { status: 'vacant' } }),
-          prisma.unit.update({ where: { id: Number(unitId) }, data: { status: 'occupied' } }),
+        await db.$transaction([
+          db.unit.update({ where: { id: current.unitId }, data: { status: 'vacant' } }),
+          db.unit.update({ where: { id: Number(unitId) }, data: { status: 'occupied' } }),
         ]);
       }
     }
 
-    const contract = await prisma.contract.update({
+    const contract = await db.contract.update({
       where: { id: contractId },
       data: {
         ...(startDate     !== undefined && { startDate:     new Date(startDate) }),
@@ -93,11 +100,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const force = new URL(req.url).searchParams.get('force') === 'true';
     const contractId = Number(id);
 
-    const contract = await prisma.contract.findUnique({
+    const contract = await db.contract.findUnique({
       where: { id: contractId },
       include: { _count: { select: { rentCharges: true } } },
     });
@@ -109,7 +119,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       );
     }
     // Hard block: never delete contracts that have collected payments
-    const withPayments = await prisma.rentCharge.count({
+    const withPayments = await db.rentCharge.count({
       where: { contractId, payments: { some: {} } },
     });
     if (withPayments > 0) {
@@ -135,11 +145,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
 
     // Safe cascade: charges have no payments, delete charges → increases/deposits → contract
-    await prisma.$transaction([
-      prisma.rentCharge.deleteMany({ where: { contractId } }),
-      prisma.contractIncrease.deleteMany({ where: { contractId } }),
-      prisma.depositTransaction.deleteMany({ where: { contractId } }),
-      prisma.contract.delete({ where: { id: contractId } }),
+    await db.$transaction([
+      db.rentCharge.deleteMany({ where: { contractId } }),
+      db.contractIncrease.deleteMany({ where: { contractId } }),
+      db.depositTransaction.deleteMany({ where: { contractId } }),
+      db.contract.delete({ where: { id: contractId } }),
     ]);
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

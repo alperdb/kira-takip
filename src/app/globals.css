@@ -50,9 +50,9 @@
   --shadow-modal: 0 20px 60px rgba(15,23,42,0.12);
 }
 
-/* ── Sidebar width ───────────────────────────────────── */
-:root                    { --sidebar-w: 240px; }
-html.sidebar-collapsed   { --sidebar-w: 56px;  }
+/* ── Sidebar width (includes outer floating gap) ─────── */
+:root                    { --sidebar-w: 264px; }   /* panel 240px + 12px left + 12px right gap */
+html.sidebar-collapsed   { --sidebar-w: 72px;  }   /* panel 52px  + 12px left +  8px right gap */
 
 /* ── Reset ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -114,22 +114,153 @@ label {
 .tr-hover:hover { background: rgba(255,255,255,0.025); }
 .tr-click { cursor: pointer; }
 
-/* ── Sidebar nav links ───────────────────────────────── */
-.sidebar-link {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px; border-radius: 8px;
-  font-size: 0.875rem; font-weight: 400;
-  color: var(--muted); background: transparent;
-  text-decoration: none; position: relative;
-  transition: background 0.12s, color 0.12s;
+/* ══════════════════════════════════════════════════════
+   SIDEBAR — Floating panel system
+   Three layers: app bg · floating panel · content surface
+   ══════════════════════════════════════════════════════ */
+
+/* Outer shell — transparent, provides breathing space */
+.sb-outer {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+  background: transparent;
+  padding: 12px 12px 12px 12px;
+  display: flex; flex-direction: column;
+  transition: width 0.25s ease;
+  pointer-events: none;            /* pass clicks through the gap */
+}
+
+/* Floating panel — the actual visible object */
+.sb-panel {
+  flex: 1; display: flex; flex-direction: column;
+  border-radius: 14px; overflow: hidden;
+  background: #141417;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 1px 0   rgba(255,255,255,0.04) inset,   /* top highlight */
+    0 2px 4px rgba(0,0,0,0.35),
+    0 8px 28px rgba(0,0,0,0.55);
+  pointer-events: all;            /* re-enable clicks on the panel */
+}
+[data-theme="light"] .sb-panel {
+  background: #FEFEFE;
+  border: 1px solid rgba(0,0,0,0.09);
+  box-shadow:
+    0 1px 0   rgba(255,255,255,0.8) inset,
+    0 2px 8px rgba(0,0,0,0.07),
+    0 8px 28px rgba(0,0,0,0.12);
+}
+
+/* Brand header */
+.sb-header {
+  display: flex; align-items: center; flex-shrink: 0;
+  padding: 15px 14px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 10px;
+}
+.sb-header.collapsed {
+  padding: 15px 0 14px;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+[data-theme="light"] .sb-header { border-bottom-color: rgba(0,0,0,0.07); }
+[data-theme="light"] .sb-header.collapsed { border-bottom-color: rgba(0,0,0,0.07); }
+
+.sb-brand-mark {
+  width: 27px; height: 27px; border-radius: 7px; flex-shrink: 0;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.sb-brand-text {
+  display: flex; flex-direction: column; flex: 1; min-width: 0;
+}
+.sb-brand-name {
+  font-size: 0.875rem; font-weight: 700;
+  color: #EEEEF0; letter-spacing: -0.015em; line-height: 1.2;
+}
+[data-theme="light"] .sb-brand-name { color: var(--text); }
+.sb-brand-sub {
+  font-size: 0.5rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.22);
+  margin-top: 2px; line-height: 1;
+}
+[data-theme="light"] .sb-brand-sub { color: var(--subtle); }
+
+.sb-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+  color: rgba(255,255,255,0.25); background: transparent;
+  border: none; cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.sb-toggle:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.55); }
+[data-theme="light"] .sb-toggle { color: var(--subtle); }
+[data-theme="light"] .sb-toggle:hover { background: var(--surface2); color: var(--muted); }
+
+/* Navigation zone */
+.sb-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 8px 4px; }
+.sb-group { margin-bottom: 4px; }
+.sb-group-label {
+  font-size: 0.5rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.18);
+  padding: 10px 6px 4px;
+  display: block;
+}
+[data-theme="light"] .sb-group-label { color: var(--subtle); }
+
+/* Nav items — soft pill active, no hard lines */
+.sb-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 10px;
+  font-size: 0.8125rem; font-weight: 400;
+  color: rgba(255,255,255,0.42);
+  background: transparent; text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.1s, color 0.1s;
   white-space: nowrap; overflow: hidden;
 }
-.sidebar-link:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-[data-theme="light"] .sidebar-link:hover { background: var(--surface2); color: var(--text); }
-.sidebar-link.active {
-  background: var(--primary-bg);
-  color: var(--primary);
-  font-weight: 600;
+.sb-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.75);
+}
+/* Soft pill active — no full-width bright highlight */
+.sb-item.active {
+  background: rgba(255,255,255,0.09);
+  color: #F0F0F2;
+  font-weight: 500;
+}
+[data-theme="light"] .sb-item { color: var(--muted); }
+[data-theme="light"] .sb-item:hover { background: rgba(0,0,0,0.05); color: var(--text); }
+[data-theme="light"] .sb-item.active { background: rgba(0,0,0,0.07); color: var(--text); }
+
+/* Footer zone */
+.sb-footer {
+  flex-shrink: 0; padding: 6px 8px 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+[data-theme="light"] .sb-footer { border-top-color: rgba(0,0,0,0.07); }
+.sb-footer-item { color: rgba(255,255,255,0.28) !important; font-size: 0.8125rem; }
+.sb-footer-item:hover { color: rgba(255,255,255,0.55) !important; }
+[data-theme="light"] .sb-footer-item { color: var(--subtle) !important; }
+[data-theme="light"] .sb-footer-item:hover { color: var(--muted) !important; }
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR — Primary action buttons
+   ══════════════════════════════════════════════════════ */
+.tb-action {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 10px; border-radius: 6px;
+  font-size: 0.8125rem; font-weight: 500;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.tb-action:hover {
+  color: var(--text);
+  background: var(--surface2);
+  border-color: var(--border-s);
 }
 
 /* ── Toast animations ────────────────────────────────── */

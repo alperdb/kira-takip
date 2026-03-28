@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { applyPayment } from '@/lib/charges';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { id } = await params;
     const { amount, method, referenceNo, notes, paidAt } = await req.json();
 
@@ -13,7 +17,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Geçerli bir tutar girin' }, { status: 400 });
     }
 
-    const charge = await prisma.rentCharge.findUnique({ where: { id: Number(id) } });
+    const charge = await db.rentCharge.findUnique({ where: { id: Number(id) } });
     if (!charge) return NextResponse.json({ error: 'Alacak bulunamadı' }, { status: 404 });
     if (charge.status === 'waived' || charge.status === 'paid') {
       return NextResponse.json({ error: 'Bu alacak zaten kapatılmış' }, { status: 400 });

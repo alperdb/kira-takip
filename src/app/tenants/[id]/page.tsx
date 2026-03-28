@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { Card, Badge } from '@/components/ui';
 import { PaymentHistoryCard } from '@/components/PaymentHistoryCard';
 import { TenantTimeline } from '@/components/TenantTimeline';
@@ -13,8 +14,12 @@ const tryCurrency = (n: number) =>
 type Params = { params: Promise<{ id: string }> };
 
 export default async function TenantDetailPage({ params }: Params) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
   const { id } = await params;
-  const tenant = await prisma.tenant.findUnique({
+  const tenant = await db.tenant.findUnique({
     where: { id: Number(id) },
     include: {
       contracts: {
@@ -29,7 +34,7 @@ export default async function TenantDetailPage({ params }: Params) {
 
   if (!tenant) notFound();
 
-  const financials = await prisma.rentCharge.aggregate({
+  const financials = await db.rentCharge.aggregate({
     where: {
       tenantId: tenant.id,
       status:   { not: 'waived' },

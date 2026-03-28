@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { PageHeader, Card } from '@/components/ui';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ChartCard, type MonthlyPoint } from '@/components/dashboard/ChartCard';
@@ -17,7 +19,7 @@ import { Banknote, BarChart3, AlertTriangle, Home } from 'lucide-react';
 
 const TR_MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
-async function getData() {
+async function getData(db: ReturnType<typeof getUserDb>) {
   const now        = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -33,10 +35,10 @@ async function getData() {
     monthlyChargesRaw,    // charges by period — alacak line
     monthlyPaymentsRaw,   // actual payments by paidAt — tahsilat line
   ] = await Promise.all([
-    prisma.unit.count(),
-    prisma.unit.count({ where: { status: 'vacant' } }),
-    prisma.unit.count({ where: { status: 'occupied' } }),
-    prisma.rentCharge.findMany({
+    db.unit.count(),
+    db.unit.count({ where: { status: 'vacant' } }),
+    db.unit.count({ where: { status: 'occupied' } }),
+    db.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {
         tenant:   { select: { name: true } },
@@ -47,36 +49,36 @@ async function getData() {
       take: 10,
     }),
     // Total billed this month (chargeAmount + paidAmount for collection rate)
-    prisma.rentCharge.aggregate({
+    db.rentCharge.aggregate({
       where: { periodStart: { gte: monthStart, lt: monthEnd }, status: { not: 'waived' } },
       _sum: { chargeAmount: true, paidAmount: true },
     }),
     // Actual payments received this month (cash-basis)
-    prisma.payment.aggregate({
+    db.payment.aggregate({
       where: { paidAt: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
     // Open balance this month — only unpaid/partial/overdue charges
-    prisma.rentCharge.aggregate({
+    db.rentCharge.aggregate({
       where: {
         periodStart: { gte: monthStart, lt: monthEnd },
         status: { in: ['pending', 'partial', 'overdue'] },
       },
       _sum: { chargeAmount: true, paidAmount: true },
     }),
-    prisma.expense.aggregate({
+    db.expense.aggregate({
       where: { date: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
     // Charges by period for alacak line (exclude waived)
-    prisma.rentCharge.groupBy({
+    db.rentCharge.groupBy({
       by: ['periodStart'],
       where: { periodStart: { gte: sixMonAgo }, status: { not: 'waived' } },
       _sum: { chargeAmount: true },
       orderBy: { periodStart: 'asc' },
     }),
     // Actual payments for last 6 months for tahsilat line
-    prisma.payment.findMany({
+    db.payment.findMany({
       where: { paidAt: { gte: sixMonAgo } },
       select: { amount: true, paidAt: true },
     }),
@@ -129,7 +131,10 @@ function ChartLegend({ color, label }: { color: string; label: string }) {
 
 // ── Page ────────────────────────────────────────────────
 export default async function Dashboard() {
-  const d   = await getData();
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+  const d   = await getData(db);
   const fmt = (n: number) => `₺${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const now       = new Date();

@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
+import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/ui';
 import { ContractModal } from './ContractModal';
 import { ContractsTable } from './ContractsTable';
@@ -11,11 +13,15 @@ export default async function ContractsPage({
 }: {
   searchParams: Promise<{ ownerId?: string }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const db = getUserDb(session.id);
+
   const { ownerId } = await searchParams;
   const ownerIdFilter = ownerId ? Number(ownerId) : undefined;
 
   const [contracts, vacantUnits, allUnits, tenants, owners] = await Promise.all([
-    prisma.contract.findMany({
+    db.contract.findMany({
       where: ownerIdFilter
         ? { unit: { property: { ownerId: ownerIdFilter } } }
         : {},
@@ -25,17 +31,17 @@ export default async function ContractsPage({
       },
       orderBy: { startDate: 'desc' },
     }),
-    prisma.unit.findMany({
+    db.unit.findMany({
       where: { status: 'vacant' },
       select: { id: true, unitNo: true, property: { select: { title: true } } },
       orderBy: { unitNo: 'asc' },
     }),
-    prisma.unit.findMany({
+    db.unit.findMany({
       select: { id: true, unitNo: true, property: { select: { title: true } } },
       orderBy: { unitNo: 'asc' },
     }),
-    prisma.tenant.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
-    prisma.owner.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    db.tenant.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    db.owner.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
   const serialized = contracts.map(c => ({

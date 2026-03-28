@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getUserDb } from '@/lib/user-db';
 import { generateMonthlyCharges, updateOverdueStatuses } from '@/lib/charges';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+    const db = getUserDb(session.id);
     const { searchParams } = new URL(req.url);
     const status     = searchParams.get('status');
     const contractId = searchParams.get('contract_id');
@@ -12,7 +16,7 @@ export async function GET(req: NextRequest) {
     const from       = searchParams.get('from');
     const to         = searchParams.get('to');
 
-    const charges = await prisma.rentCharge.findMany({
+    const charges = await db.rentCharge.findMany({
       where: {
         ...(status     ? { status: status as 'pending' | 'partial' | 'paid' | 'overdue' | 'waived' } : {}),
         ...(contractId ? { contractId: Number(contractId) } : {}),
@@ -42,6 +46,8 @@ export async function GET(req: NextRequest) {
 // Manuel tahakkuk tetikle: POST /api/charges/generate
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
