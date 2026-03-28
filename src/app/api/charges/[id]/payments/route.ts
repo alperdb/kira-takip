@@ -25,6 +25,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // FIFO: bu charge'ın contractId'si üzerinden uygula
     const result = await applyPayment(
+      db,
       charge.contractId,
       Number(amount),
       method ?? 'cash',

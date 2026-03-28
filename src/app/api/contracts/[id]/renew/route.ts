@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const rentAmount = newRent != null
       ? Number(newRent)
-      : await getEffectiveRentAmount(contractId, new Date());
+      : await getEffectiveRentAmount(db, contractId, new Date());
 
     if (isNaN(rentAmount) || rentAmount <= 0) {
       return NextResponse.json({ error: 'Kira bedeli sıfırdan büyük olmalı' }, { status: 400 });

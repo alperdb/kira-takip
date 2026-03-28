@@ -1,4 +1,4 @@
-import { prisma } from './db';
+import type { PrismaClient } from '@prisma/client';
 import { getRate } from './tcmb';
 import { computeChargeStatus } from './chargeStatus';
 
@@ -6,41 +6,32 @@ import { computeChargeStatus } from './chargeStatus';
 export { calcRentIncrease } from './rentCalc';
 
 // ─── Geçerli kira miktarı (son artış veya başlangıç) ─────────
-export async function getEffectiveRentAmount(contractId: number, asOfDate: Date): Promise<number> {
-  const lastIncrease = await prisma.contractIncrease.findFirst({
+export async function getEffectiveRentAmount(
+  db: PrismaClient,
+  contractId: number,
+  asOfDate: Date,
+): Promise<number> {
+  const lastIncrease = await db.contractIncrease.findFirst({
     where: { contractId, effectiveDate: { lte: asOfDate } },
     orderBy: { effectiveDate: 'desc' },
   });
   if (lastIncrease) return Number(lastIncrease.newAmount);
 
-  const contract = await prisma.contract.findUnique({ where: { id: contractId } });
+  const contract = await db.contract.findUnique({ where: { id: contractId } });
   if (!contract) throw new Error(`Contract ${contractId} not found`);
   return Number(contract.rentAmount);
 }
 
-// ─── İlk ay orantılı hesap ───────────────────────────────────
-function prorateAmount(amount: number, startDate: Date, periodStart: Date): number {
-  const year  = periodStart.getFullYear();
-  const month = periodStart.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startDay    = startDate.getDate();
-  const daysActive  = daysInMonth - startDay + 1;
-  return Math.round((amount / daysInMonth) * daysActive * 100) / 100;
-}
-
-function isSameMonth(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
-}
-
 // ─── Aylık tahakkuk üret (idempotent) ────────────────────────
-export async function generateMonthlyCharges(targetDate: Date): Promise<number> {
+// Business rule: no proration — always full monthly amount, regardless of start day.
+export async function generateMonthlyCharges(db: PrismaClient, targetDate: Date): Promise<number> {
   const periodStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
   const periodEnd   = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
 
-  const activeContracts = await prisma.contract.findMany({
+  const activeContracts = await db.contract.findMany({
     where: {
-      status:     'active',
-      startDate:  { lte: periodEnd },
+      status:    'active',
+      startDate: { lte: periodEnd },
       OR: [{ endDate: null }, { endDate: { gte: periodStart } }],
     },
   });
@@ -49,7 +40,7 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
 
   for (const contract of activeContracts) {
     // İdempotent: bu dönem için zaten var mı?
-    const exists = await prisma.rentCharge.findUnique({
+    const exists = await db.rentCharge.findUnique({
       where: { contractId_periodStart: { contractId: contract.id, periodStart } },
     });
     if (exists) continue;
@@ -57,13 +48,8 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
     // Ödeme günü (max 28 — schema constraint)
     const dueDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), contract.paymentDay);
 
-    const chargeAmount = await getEffectiveRentAmount(contract.id, dueDate);
-
-    // İlk ay prorate
-    const isFirstMonth = isSameMonth(contract.startDate, periodStart);
-    const finalAmount  = isFirstMonth
-      ? prorateAmount(chargeAmount, contract.startDate, periodStart)
-      : chargeAmount;
+    // Full monthly amount — no proration per business rule
+    const chargeAmount = await getEffectiveRentAmount(db, contract.id, dueDate);
 
     // ── Dövizli sözleşmeler için TCMB kuru ──────────────────
     let exchangeRate:    number | undefined;
@@ -78,16 +64,16 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
         );
       }
       exchangeRate    = rate;
-      chargeAmountTry = Math.round(finalAmount * rate * 100) / 100;
+      chargeAmountTry = Math.round(chargeAmount * rate * 100) / 100;
     }
 
-    await prisma.rentCharge.create({
+    await db.rentCharge.create({
       data: {
         contractId:      contract.id,
         unitId:          contract.unitId,
         tenantId:        contract.tenantId,
         dueDate,
-        chargeAmount:    finalAmount,
+        chargeAmount,
         periodStart,
         periodEnd,
         status:          'pending',
@@ -102,12 +88,12 @@ export async function generateMonthlyCharges(targetDate: Date): Promise<number> 
 }
 
 // ─── Gecikme durumunu güncelle ───────────────────────────────
-export async function updateOverdueStatuses(graceDays = 5): Promise<number> {
+export async function updateOverdueStatuses(db: PrismaClient, graceDays = 5): Promise<number> {
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
   cutoff.setDate(cutoff.getDate() - graceDays);
 
-  const result = await prisma.rentCharge.updateMany({
+  const result = await db.rentCharge.updateMany({
     where: {
       status:  { in: ['pending', 'partial'] },
       dueDate: { lt: cutoff },
@@ -119,6 +105,7 @@ export async function updateOverdueStatuses(graceDays = 5): Promise<number> {
 
 // ─── Ödeme uygula (FIFO) ─────────────────────────────────────
 export async function applyPayment(
+  db: PrismaClient,
   contractId: number,
   totalAmount: number,
   method: string,
@@ -126,7 +113,7 @@ export async function applyPayment(
   notes?: string,
   paidAt?: Date,
 ): Promise<{ applied: number; remaining: number; chargesUpdated: number }> {
-  const openCharges = await prisma.rentCharge.findMany({
+  const openCharges = await db.rentCharge.findMany({
     where: {
       contractId,
       status: { in: ['pending', 'partial', 'overdue'] },
@@ -134,19 +121,19 @@ export async function applyPayment(
     orderBy: { dueDate: 'asc' }, // FIFO: en eski önce
   });
 
-  let remaining       = totalAmount;
-  let chargesUpdated  = 0;
-  const paymentTime   = paidAt ?? new Date();
+  let remaining      = totalAmount;
+  let chargesUpdated = 0;
+  const paymentTime  = paidAt ?? new Date();
 
   for (const charge of openCharges) {
     if (remaining <= 0) break;
 
-    const owed   = Math.max(0, Number(charge.chargeAmount) - Number(charge.paidAmount));
+    const owed = Math.max(0, Number(charge.chargeAmount) - Number(charge.paidAmount));
     if (owed === 0) continue; // stale status — skip silently
 
     const paying = Math.min(remaining, owed);
 
-    await prisma.payment.create({
+    await db.payment.create({
       data: {
         rentChargeId: charge.id,
         amount:       paying,
@@ -159,12 +146,9 @@ export async function applyPayment(
 
     const newPaid   = Number(charge.paidAmount) + paying;
     const newStatus = computeChargeStatus(newPaid, Number(charge.chargeAmount), charge.dueDate);
-    await prisma.rentCharge.update({
+    await db.rentCharge.update({
       where: { id: charge.id },
-      data: {
-        paidAmount: newPaid,
-        status:     newStatus,
-      },
+      data:  { paidAmount: newPaid, status: newStatus },
     });
 
     remaining -= paying;

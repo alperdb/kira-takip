@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -36,7 +38,7 @@ export default async function ContractDetailPage({ params }: Params) {
 
   if (!contract) notFound();
 
-  const effectiveRent = await getEffectiveRentAmount(contract.id, new Date());
+  const effectiveRent = await getEffectiveRentAmount(db, contract.id, new Date());
 
   return (
     <>

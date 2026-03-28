@@ -66,7 +66,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     });
 
     const effectiveRent = activeContract
-      ? await getEffectiveRentAmount(activeContract.id, new Date())
+      ? await getEffectiveRentAmount(db, activeContract.id, new Date())
       : null;
 
     return NextResponse.json({

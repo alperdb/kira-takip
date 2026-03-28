@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 import { createBackup } from '@/lib/backup/createBackup';
 
 export async function GET() {
   try {
-    const { data, filename } = await createBackup();
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+
+    const { data, filename } = await createBackup(session.id);
 
     return new NextResponse(data as unknown as BodyInit, {
       headers: {

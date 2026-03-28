@@ -1,28 +1,19 @@
-import { prisma } from '@/lib/db';
+import { getUserDb, getUserDbPath } from '@/lib/user-db';
 import fs from 'fs';
-import path from 'path';
 
 const SQLITE_MAGIC = Buffer.from('SQLite format 3\x00');
-
-function getDbPath(): string {
-  // ELECTRON_DB_PATH is set by electron/main.js — always correct in packaged builds
-  if (process.env.ELECTRON_DB_PATH) return process.env.ELECTRON_DB_PATH;
-  const url = process.env.DATABASE_URL ?? '';
-  const filePath = url.replace(/^file:/, '');
-  return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-}
 
 export function isValidSQLite(buf: Buffer): boolean {
   if (buf.length < 16) return false;
   return buf.subarray(0, 16).equals(SQLITE_MAGIC);
 }
 
-export async function restoreBackup(buffer: Buffer): Promise<void> {
+export async function restoreBackup(userId: number, buffer: Buffer): Promise<void> {
   if (!isValidSQLite(buffer)) {
     throw new Error('Geçersiz yedek dosyası. Lütfen geçerli bir Kira Takip yedeği seçin.');
   }
 
-  const dbPath    = getDbPath();
+  const dbPath    = getUserDbPath(userId);
   const oldBackup = dbPath + '.pre-restore';
 
   // Save a safety copy of current DB before overwriting
@@ -31,12 +22,13 @@ export async function restoreBackup(buffer: Buffer): Promise<void> {
   }
 
   try {
-    // Disconnect Prisma so the DB file is not locked
-    await prisma.$disconnect();
+    // Disconnect per-user Prisma client so the DB file is not locked
+    const db = getUserDb(userId);
+    await db.$disconnect();
 
-    // Clear the global singleton so it reconnects to the new file on next use
-    const g = globalThis as { prisma?: unknown };
-    delete g.prisma;
+    // Clear per-user singleton from globalThis so it reconnects on next use
+    const g = globalThis as { userDbs?: Map<number, unknown> };
+    g.userDbs?.delete(userId);
 
     // Write the restored database
     fs.writeFileSync(dbPath, buffer);

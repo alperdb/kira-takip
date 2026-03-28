@@ -1,41 +1,32 @@
-import { prisma } from '@/lib/db';
+import { getUserDb, getUserDbPath } from '@/lib/user-db';
 import fs from 'fs';
 import path from 'path';
 
-function getDbPath(): string {
-  // ELECTRON_DB_PATH is set by electron/main.js — always correct in packaged builds
-  if (process.env.ELECTRON_DB_PATH) return process.env.ELECTRON_DB_PATH;
-  const url = process.env.DATABASE_URL ?? '';
-  const filePath = url.replace(/^file:/, '');
-  return path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-}
-
-function buildFilename(): string {
+function buildFilename(userId: number): string {
   const now  = new Date();
   const yyyy = now.getFullYear();
   const mm   = String(now.getMonth() + 1).padStart(2, '0');
   const dd   = String(now.getDate()).padStart(2, '0');
   const hh   = String(now.getHours()).padStart(2, '0');
   const min  = String(now.getMinutes()).padStart(2, '0');
-  return `kiratakip-backup-${yyyy}-${mm}-${dd}-${hh}${min}.db`;
+  return `kiratakip-user${userId}-backup-${yyyy}-${mm}-${dd}-${hh}${min}.db`;
 }
 
-export async function createBackup(): Promise<{ data: Buffer; filename: string }> {
-  const dbPath = getDbPath();
+export async function createBackup(userId: number): Promise<{ data: Buffer; filename: string }> {
+  const dbPath = getUserDbPath(userId);
 
   if (!fs.existsSync(dbPath)) {
     throw new Error('Veritabanı dosyası bulunamadı');
   }
 
   // Flush WAL to main DB file before copying.
-  // Must use $queryRawUnsafe — PRAGMA wal_checkpoint returns result rows,
-  // which $executeRawUnsafe rejects in SQLite.
-  await prisma.$queryRawUnsafe('PRAGMA wal_checkpoint(FULL)');
+  const db = getUserDb(userId);
+  await db.$queryRawUnsafe('PRAGMA wal_checkpoint(FULL)');
 
   const data     = fs.readFileSync(dbPath);
-  const filename = buildFilename();
+  const filename = buildFilename(userId);
 
-  // Save a server-side copy to /backups (best-effort — may fail in packaged app)
+  // Save a server-side copy to /backups (best-effort)
   try {
     const backupsDir = path.resolve(process.cwd(), 'backups');
     if (!fs.existsSync(backupsDir)) {

@@ -1,5 +1,4 @@
 import { XMLParser } from 'fast-xml-parser';
-import { prisma } from './db';
 
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'CHF';
 export const SUPPORTED: CurrencyCode[] = ['USD', 'EUR', 'GBP', 'CHF'];
@@ -63,24 +62,9 @@ async function fetchFromTCMB(): Promise<{ rates: RateMap; xmlDate: Date } | null
   }
 }
 
-// ── Lazy DB upsert (fire-and-forget) ─────────────────────────
-async function saveToDb(rates: RateMap, date: Date): Promise<void> {
-  await Promise.all(
-    SUPPORTED
-      .filter(c => rates[c])
-      .map(currency =>
-        prisma.exchangeRate.upsert({
-          where:  { date_currency: { date, currency } },
-          create: { date, currency, buyingRate: rates[currency].buying, sellingRate: rates[currency].selling },
-          update: { buyingRate: rates[currency].buying, sellingRate: rates[currency].selling },
-        }),
-      ),
-  );
-}
-
 // ── Public API ────────────────────────────────────────────────
 
-/** Bugünün kurlarını döndür (cache → TCMB → null). */
+/** Bugünün kurlarını döndür (process-level cache → TCMB → null). */
 export async function getTodayRates(): Promise<RateMap | null> {
   const now = new Date();
 
@@ -92,7 +76,6 @@ export async function getTodayRates(): Promise<RateMap | null> {
   if (!result) return _cache?.rates ?? null; // Son geçerli cache
 
   _cache = { rates: result.rates, fetchedAt: now };
-  saveToDb(result.rates, result.xmlDate).catch(console.error); // Async, engelleme yok
   return result.rates;
 }
 

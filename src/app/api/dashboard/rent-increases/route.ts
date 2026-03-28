@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest) {
         const daysRemaining = Math.ceil(
           (nextDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
         );
-        const currentRent = await getEffectiveRentAmount(c.id, now);
+        const currentRent = await getEffectiveRentAmount(db, c.id, now);
 
         return {
           contractId:      c.id,

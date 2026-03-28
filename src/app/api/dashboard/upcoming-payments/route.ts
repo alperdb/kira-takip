@@ -56,7 +56,7 @@ export async function GET() {
           return null;
         }
 
-        const chargeAmount = await getEffectiveRentAmount(c.id, nextDate);
+        const chargeAmount = await getEffectiveRentAmount(db, c.id, nextDate);
         const chargeId     = existingCharge?.id ?? null;
         const remaining    = existingCharge
           ? Math.max(0, Number(existingCharge.chargeAmount) - Number(existingCharge.paidAmount))

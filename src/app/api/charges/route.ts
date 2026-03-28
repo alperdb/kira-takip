@@ -51,16 +51,18 @@ export async function POST(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
+    const db = getUserDb(session.id);
+
     if (action === 'generate') {
       const body = await req.json().catch(() => ({}));
       const targetDate = body.date ? new Date(body.date) : new Date();
-      const created    = await generateMonthlyCharges(targetDate);
+      const created    = await generateMonthlyCharges(db, targetDate);
       return NextResponse.json({ created, targetDate });
     }
 
     if (action === 'update-overdue') {
-      const body      = await req.json().catch(() => ({}));
-      const updated   = await updateOverdueStatuses(body.graceDays ?? 5);
+      const body    = await req.json().catch(() => ({}));
+      const updated = await updateOverdueStatuses(db, body.graceDays ?? 5);
       return NextResponse.json({ updated });
     }
 

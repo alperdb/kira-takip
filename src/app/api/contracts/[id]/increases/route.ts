@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const contract = await db.contract.findUnique({ where: { id: contractId } });
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
-    const oldRent = await getEffectiveRentAmount(contractId, new Date());
+    const oldRent = await getEffectiveRentAmount(db, contractId, new Date());
 
     const { newRent, increaseAmount } = calcRentIncrease(oldRent, rate);
 

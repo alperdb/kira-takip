@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 import { restoreBackup } from '@/lib/backup/restoreBackup';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+
     const formData = await req.formData();
     const file     = formData.get('file');
 
@@ -15,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    await restoreBackup(buffer);
+    await restoreBackup(session.id, buffer);
 
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

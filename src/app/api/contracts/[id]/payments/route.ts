@@ -48,6 +48,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
     const result = await applyPayment(
+      db,
       contractId,
       Number(amount),
       method ?? 'cash',
