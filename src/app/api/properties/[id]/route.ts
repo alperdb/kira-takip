@@ -50,19 +50,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const property = await db.property.findUnique({
-      where: { id: Number(id) },
-      include: { _count: { select: { units: true } } },
-    });
+    const property = await db.property.findUnique({ where: { id: Number(id) } });
     if (!property) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (property._count.units > 0) {
-      return NextResponse.json(
-        { error: `Bu binada ${property._count.units} daire var. Silmek için önce daireleri kaldırın.` },
-        { status: 409 },
-      );
-    }
-    await db.property.delete({ where: { id: Number(id) } });
-    return NextResponse.json({ ok: true });
+    await db.property.update({ where: { id: Number(id) }, data: { isArchived: true } });
+    return NextResponse.json({ ok: true, message: 'Bina arşivlendi' });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

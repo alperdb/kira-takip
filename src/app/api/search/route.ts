@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const [tenants, properties, contracts] = await Promise.all([
     db.tenant.findMany({
       where: {
+        isArchived: false,
         OR: [
           { name:  { contains: q } },
           { phone: { contains: q } },
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     }),
     db.property.findMany({
       where: {
+        isArchived: false,
         OR: [
           { title:    { contains: q } },
           { city:     { contains: q } },

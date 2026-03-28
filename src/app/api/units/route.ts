@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
 
     const units = await db.unit.findMany({
       where: {
+        isArchived: false,
         ...(propertyId ? { propertyId: Number(propertyId) } : {}),
         ...(status     ? { status: status as 'vacant' | 'occupied' | 'maintenance' } : {}),
       },

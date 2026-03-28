@@ -38,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
     }
 
-    const office = readOfficeSettings();
+    const office = readOfficeSettings(session.id);
 
     const data = {
       ...bindContractData({

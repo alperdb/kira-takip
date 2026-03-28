@@ -27,7 +27,7 @@ async function getData(db: ReturnType<typeof getUserDb>) {
 
   const [
     unitCount, vacantCount, occupiedCount,
-    overdueCharges,
+    overdueCharges, debtorTenants,
     thisMonthBilled,      // total billed this month (for collection rate)
     thisMonthActualPaid,  // actual cash collected this month
     thisMonthOpenCharges, // open (unpaid/partial/overdue) charges this month
@@ -35,9 +35,9 @@ async function getData(db: ReturnType<typeof getUserDb>) {
     monthlyChargesRaw,    // charges by period — alacak line
     monthlyPaymentsRaw,   // actual payments by paidAt — tahsilat line
   ] = await Promise.all([
-    db.unit.count(),
-    db.unit.count({ where: { status: 'vacant' } }),
-    db.unit.count({ where: { status: 'occupied' } }),
+    db.unit.count({ where: { isArchived: false } }),
+    db.unit.count({ where: { isArchived: false, status: 'vacant' } }),
+    db.unit.count({ where: { isArchived: false, status: 'occupied' } }),
     db.rentCharge.findMany({
       where: { status: 'overdue' },
       include: {
@@ -47,6 +47,11 @@ async function getData(db: ReturnType<typeof getUserDb>) {
       },
       orderBy: { dueDate: 'asc' },
       take: 10,
+    }),
+    db.rentCharge.findMany({
+      where: { status: 'overdue' },
+      select: { tenantId: true },
+      distinct: ['tenantId'],
     }),
     // Total billed this month (chargeAmount + paidAmount for collection rate)
     db.rentCharge.aggregate({
@@ -116,6 +121,7 @@ async function getData(db: ReturnType<typeof getUserDb>) {
   return {
     unitCount, vacantCount, charged, paid, totalBilled, totalPaidOnBills,
     expenses, outstanding, occupancy, overdueCharges, chartData,
+    debtorCount: debtorTenants.length,
   };
 }
 
@@ -175,7 +181,7 @@ export default async function Dashboard() {
           value={fmt(d.outstanding)}
           color="red"
           trend={d.outstanding > 0 ? 'down' : undefined}
-          sub={`${d.overdueCharges.length} geciken alacak`}
+          sub={`${d.debtorCount} borçlu kiracı · ${d.overdueCharges.length} alacak`}
         />
         <KpiCard
           icon={Home}

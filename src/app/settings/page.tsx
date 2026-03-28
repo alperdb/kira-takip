@@ -11,7 +11,7 @@ import {
 // ── Office Info ───────────────────────────────────────────────
 function OfficeInfoSection() {
   const [form, setForm] = useState({
-    officeName: '', managerName: '', phone: '', email: '', address: '',
+    officeName: '', managerName: '', phone: '', email: '', address: '', currencyCode: 'TRY',
   });
   const [saving,  setSaving]  = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,19 @@ function OfficeInfoSection() {
           {field('E-posta', 'email', 'email')}
         </div>
         {field('Adres', 'address')}
+        <div>
+          <label>Para Birimi</label>
+          <select
+            value={form.currencyCode}
+            onChange={e => setForm(f => ({ ...f, currencyCode: e.target.value }))}
+            disabled={loading}
+            style={{ width: '100%', boxSizing: 'border-box' }}
+          >
+            <option value="TRY">₺ Türk Lirası (TRY)</option>
+            <option value="USD">$ Amerikan Doları (USD)</option>
+            <option value="EUR">€ Euro (EUR)</option>
+          </select>
+        </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
           <Btn type="submit" disabled={saving || loading}>
             {saving ? 'Kaydediliyor...' : 'Kaydet'}

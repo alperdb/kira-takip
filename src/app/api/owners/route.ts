@@ -9,6 +9,7 @@ export async function GET() {
     const db = getUserDb(session.id);
 
     const owners = await db.owner.findMany({
+      where: { isArchived: false },
       include: { _count: { select: { properties: true } } },
       orderBy: { createdAt: 'desc' },
     });

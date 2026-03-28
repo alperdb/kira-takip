@@ -49,19 +49,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const owner = await db.owner.findUnique({
-      where: { id: Number(id) },
-      include: { _count: { select: { properties: true } } },
-    });
+    const owner = await db.owner.findUnique({ where: { id: Number(id) } });
     if (!owner) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (owner._count.properties > 0) {
-      return NextResponse.json(
-        { error: `Bu sahibe ait ${owner._count.properties} bina var. Silmek için önce binaları kaldırın.` },
-        { status: 409 },
-      );
-    }
-    await db.owner.delete({ where: { id: Number(id) } });
-    return NextResponse.json({ ok: true });
+    await db.owner.update({ where: { id: Number(id) }, data: { isArchived: true } });
+    return NextResponse.json({ ok: true, message: 'Mülk sahibi arşivlendi' });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
     const tenants = await db.tenant.findMany({
       where: q
         ? {
+            isArchived: false,
             OR: [
               { name:  { contains: q } },
               { phone: { contains: q } },
               { email: { contains: q } },
             ],
           }
-        : undefined,
+        : { isArchived: false },
       include: {
         _count: { select: { contracts: true } },
       },

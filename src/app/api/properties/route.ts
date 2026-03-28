@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const ownerId = searchParams.get('owner_id');
 
     const properties = await db.property.findMany({
-      where: ownerId ? { ownerId: Number(ownerId) } : undefined,
+      where: ownerId ? { ownerId: Number(ownerId), isArchived: false } : { isArchived: false },
       include: {
         owner: { select: { id: true, name: true } },
         _count: { select: { units: true } },

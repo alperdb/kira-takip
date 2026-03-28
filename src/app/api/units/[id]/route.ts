@@ -58,19 +58,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const unit = await db.unit.findUnique({
-      where:   { id: Number(id) },
-      include: { _count: { select: { contracts: true } } },
-    });
+    const unit = await db.unit.findUnique({ where: { id: Number(id) } });
     if (!unit) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    if (unit._count.contracts > 0) {
-      return NextResponse.json(
-        { error: `Bu daireye ait ${unit._count.contracts} sözleşme var. Silmek için önce sözleşmeleri kaldırın.` },
-        { status: 409 },
-      );
-    }
-    await db.unit.delete({ where: { id: Number(id) } });
-    return NextResponse.json({ ok: true });
+    await db.unit.update({ where: { id: Number(id) }, data: { isArchived: true } });
+    return NextResponse.json({ ok: true, message: 'Daire arşivlendi' });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
