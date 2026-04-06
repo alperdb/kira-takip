@@ -13,8 +13,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { id } = await params;
     const { amount, method, referenceNo, notes, paidAt } = await req.json();
 
-    if (!amount || amount <= 0) {
+    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Geçerli bir tutar girin' }, { status: 400 });
+    }
+
+    const validMethods = ['cash', 'bank', 'eft', 'check', 'other'];
+    if (method !== undefined && !validMethods.includes(method)) {
+      return NextResponse.json({ error: 'Geçersiz ödeme yöntemi' }, { status: 400 });
     }
 
     const charge = await db.rentCharge.findUnique({ where: { id: Number(id) } });

@@ -16,7 +16,7 @@ export function computeChargeStatus(
   chargeAmount: number,
   dueDate:      Date,
 ): ChargeStatus {
-  if (paidAmount >= chargeAmount) return 'paid';
+  if (paidAmount >= chargeAmount - 0.01) return 'paid';
 
   // Compare at day granularity — a charge due today is NOT yet overdue
   const today = new Date(); today.setHours(0, 0, 0, 0);

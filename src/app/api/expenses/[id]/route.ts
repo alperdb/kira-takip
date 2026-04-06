@@ -13,6 +13,6 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     await db.expense.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }

@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
     const propertyId = searchParams.get('property_id');
     const year       = searchParams.get('year');
 
+    if (year && !/^\d{4}$/.test(year)) {
+      return NextResponse.json({ error: 'Geçersiz yıl formatı' }, { status: 400 });
+    }
+
     const expenses = await db.expense.findMany({
       where: {
         ...(propertyId ? { propertyId: Number(propertyId) } : {}),

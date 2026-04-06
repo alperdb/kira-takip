@@ -56,6 +56,17 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const { id } = await params;
     const tenant = await db.tenant.findUnique({ where: { id: Number(id) } });
     if (!tenant) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+
+    const activeContracts = await db.contract.count({
+      where: { tenantId: Number(id), status: 'active' },
+    });
+    if (activeContracts > 0) {
+      return NextResponse.json(
+        { error: 'Aktif sözleşmesi olan kiracı arşivlenemez. Önce sözleşmeyi sonlandırın.' },
+        { status: 409 },
+      );
+    }
+
     await db.tenant.update({ where: { id: Number(id) }, data: { isArchived: true } });
     return NextResponse.json({ ok: true, message: 'Kiracı arşivlendi' });
   } catch (e: unknown) {

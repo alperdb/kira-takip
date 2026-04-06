@@ -57,7 +57,7 @@ export async function generateMonthlyCharges(db: PrismaClient, targetDate: Date)
 
     if (contract.currency !== 'TRY') {
       const rate = await getRate(contract.currency);
-      if (rate === null) {
+      if (rate === null || rate <= 0) {
         throw new Error(
           `${contract.currency} için TCMB kur verisi alınamadı — ` +
           `alacak oluşturulamadı (contract: ${contract.id})`,

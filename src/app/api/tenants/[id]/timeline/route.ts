@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       db.contract.findMany({
         where: { tenantId },
         select: {
-          id: true, startDate: true, endDate: true, status: true,
+          id: true, startDate: true, endDate: true, status: true, terminationReason: true,
           unit: { select: { unitNo: true, property: { select: { title: true } } } },
         },
         orderBy: { startDate: 'asc' },
@@ -73,12 +73,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         detail: loc,
         href:  `/contracts/${c.id}`,
       });
-      if (c.endDate && (c.status === 'terminated' || c.status === 'renewed')) {
+      if (c.endDate && c.status === 'terminated') {
+        const isRenewal = c.terminationReason === 'Yenileme';
         events.push({
           id:    `ce-${c.id}`,
           type:  'contract_end',
           date:  c.endDate.toISOString(),
-          title: c.status === 'renewed' ? 'Sözleşme Yenilendi' : 'Sözleşme Sona Erdi',
+          title: isRenewal ? 'Sözleşme Yenilendi' : 'Sözleşme Sona Erdi',
           detail: loc,
           href:  `/contracts/${c.id}`,
         });

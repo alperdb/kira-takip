@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     });
     return NextResponse.json(contract);
   } catch (e: unknown) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
 

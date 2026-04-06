@@ -32,9 +32,6 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'type, amount, date zorunlu' }, { status: 400 });
     }
 
-    const contract = await db.contract.findUnique({ where: { id: Number(id) } });
-    if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
-
     // Depozito durumunu güncelle
     const depositStatusMap: Record<string, 'held' | 'returned' | 'partial_returned' | 'applied_to_debt' | 'forfeited'> = {
       collected:       'held',
@@ -43,6 +40,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       applied_to_debt: 'applied_to_debt',
       forfeited:       'forfeited',
     };
+
+    if (!Object.keys(depositStatusMap).includes(type)) {
+      return NextResponse.json({ error: 'Geçersiz depozito tipi' }, { status: 400 });
+    }
+
+    const contract = await db.contract.findUnique({ where: { id: Number(id) } });
+    if (!contract) return NextResponse.json({ error: 'Sözleşme bulunamadı' }, { status: 404 });
 
     const [transaction] = await db.$transaction([
       db.depositTransaction.create({

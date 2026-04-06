@@ -75,6 +75,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'paymentDay 1-28 arası olmalı' }, { status: 400 });
     }
 
+    // Unit ve tenant varlık kontrolü
+    const unit = await db.unit.findUnique({ where: { id: Number(unitId) } });
+    if (!unit) return NextResponse.json({ error: 'Daire bulunamadı' }, { status: 404 });
+    const tenant = await db.tenant.findUnique({ where: { id: Number(tenantId) } });
+    if (!tenant) return NextResponse.json({ error: 'Kiracı bulunamadı' }, { status: 404 });
+
     // Aynı unit'te aktif sözleşme var mı?
     const existing = await db.contract.findFirst({
       where: { unitId: Number(unitId), status: 'active' },
