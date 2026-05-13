@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dosya boş' }, { status: 400 });
     }
 
+    const MAX_BACKUP_SIZE = 500 * 1024 * 1024; // 500 MB
+    if (file.size > MAX_BACKUP_SIZE) {
+      return NextResponse.json({ error: 'Dosya boyutu 500 MB sınırını aşıyor' }, { status: 413 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     await restoreBackup(session.id, buffer);
 

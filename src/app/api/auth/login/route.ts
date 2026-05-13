@@ -19,10 +19,39 @@ async function devSeedDefaultAdmin() {
   }
 }
 
+// Simple in-memory rate limiter: max 5 attempts per IP per 15 minutes
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_ATTEMPTS  = 5;
+const WINDOW_MS     = 15 * 60 * 1000;
+
+function checkRateLimit(ip: string): boolean {
+  const now   = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= MAX_ATTEMPTS) return false;
+  entry.count++;
+  return true;
+}
+
+function resetRateLimit(ip: string) {
+  loginAttempts.delete(ip);
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (process.env.NODE_ENV !== 'production') {
       await devSeedDefaultAdmin();
+    }
+
+    const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'local';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Çok fazla başarısız giriş denemesi. 15 dakika sonra tekrar deneyin.' },
+        { status: 429 }
+      );
     }
 
     const { username, password } = await req.json();
@@ -40,6 +69,8 @@ export async function POST(req: NextRequest) {
     if (!valid) {
       return NextResponse.json({ error: 'Kullanıcı adı veya şifre hatalı' }, { status: 401 });
     }
+
+    resetRateLimit(ip);
 
     // Clean expired sessions for this user
     await authPrisma.session.deleteMany({

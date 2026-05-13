@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     });
     if (existing) {
       return NextResponse.json(
-        { error: 'Bu dairede zaten aktif sözleşme var (id: ' + existing.id + ')' },
+        { error: 'Bu dairede zaten aktif bir sözleşme bulunuyor.' },
         { status: 409 }
       );
     }
