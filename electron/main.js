@@ -91,7 +91,6 @@ async function initDatabase(dbPath, nodeModulesBase) {
   }
   await prisma.$disconnect();
 
-  console.log('DB initialized:', dbPath);
 }
 
 // ── Wait until Next.js server is ready ────────────────────
