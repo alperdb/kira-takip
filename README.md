@@ -99,13 +99,7 @@ npm run dev              # http://localhost:3001
 ```bash
 npm run electron:dev           # Electron ile çalıştır (dev mod)
 npm run electron:build:win     # Sadece build (yükleme yapmaz)
-npm run release                # Build + GitHub Releases'e yükle
 ```
-
-> `npm run release` için proje kökünde `.env.release` dosyası gerekir:
-> ```
-> GITHUB_TOKEN=repo_kapsamına_sahip_token
-> ```
 
 ---
 
@@ -211,13 +205,7 @@ npm run dev              # http://localhost:3001
 ```bash
 npm run electron:dev           # run in Electron (dev mode)
 npm run electron:build:win     # build only (no upload)
-npm run release                # build + publish to GitHub Releases
 ```
-
-> `npm run release` requires a `.env.release` file in the project root:
-> ```
-> GITHUB_TOKEN=token_with_repo_scope
-> ```
 
 ---
 
