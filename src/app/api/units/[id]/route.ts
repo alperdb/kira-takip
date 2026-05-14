@@ -58,10 +58,26 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const unit = await db.unit.findUnique({ where: { id: Number(id) } });
+    const unitId = Number(id);
+    const unit = await db.unit.findUnique({ where: { id: unitId } });
     if (!unit) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
-    await db.unit.update({ where: { id: Number(id) }, data: { isArchived: true } });
-    return NextResponse.json({ ok: true, message: 'Daire arşivlendi' });
+
+    // Cascade hard delete: payments → charges → contracts → unit
+    const contracts = await db.contract.findMany({ where: { unitId }, select: { id: true } });
+    const contractIds = contracts.map(c => c.id);
+    if (contractIds.length > 0) {
+      const charges = await db.rentCharge.findMany({ where: { contractId: { in: contractIds } }, select: { id: true } });
+      const chargeIds = charges.map(c => c.id);
+      if (chargeIds.length > 0) {
+        await db.payment.deleteMany({ where: { rentChargeId: { in: chargeIds } } });
+        await db.rentCharge.deleteMany({ where: { id: { in: chargeIds } } });
+      }
+      await db.contractIncrease.deleteMany({ where: { contractId: { in: contractIds } } });
+      await db.depositTransaction.deleteMany({ where: { contractId: { in: contractIds } } });
+      await db.contract.deleteMany({ where: { id: { in: contractIds } } });
+    }
+    await db.unit.delete({ where: { id: unitId } });
+    return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

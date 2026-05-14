@@ -72,7 +72,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     const filename = `sozlesme-${contractId}.pdf`;
 
-    return new NextResponse(pdfBuffer as unknown as BodyInit, {
+    return new NextResponse(new Blob([pdfBuffer]), {
       status:  200,
       headers: {
         'Content-Type':        'application/pdf',

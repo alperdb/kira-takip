@@ -25,6 +25,37 @@ Kurulum gerektirmez. Verileriniz yalnızca bilgisayarınızda saklanır — hiç
 
 ---
 
+## Ekran Görüntüleri
+
+<table>
+<tr>
+<td><img src="docs/screenshots/dashboard-dark.png" alt="Dashboard (Koyu Tema)" /></td>
+<td><img src="docs/screenshots/dashboard-light.png" alt="Dashboard (Açık Tema)" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Dashboard — Koyu Tema</sub></td>
+<td align="center"><sub>Dashboard — Açık Tema</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/sozlesmeler.png" alt="Sözleşmeler" /></td>
+<td><img src="docs/screenshots/raporlar.png" alt="Raporlar" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Sözleşmeler</sub></td>
+<td align="center"><sub>Raporlar</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/kiracilar.png" alt="Kiracılar" /></td>
+<td><img src="docs/screenshots/giderler.png" alt="Giderler" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Kiracılar</sub></td>
+<td align="center"><sub>Giderler</sub></td>
+</tr>
+</table>
+
+---
+
 ## Kurulum
 
 1. [Releases](https://github.com/alperdb/kira-takip/releases/latest) sayfasına git
@@ -128,6 +159,37 @@ MIT — bkz. [LICENSE](./LICENSE).
 KiraTakip is a **fully local** desktop application for real estate offices and individual property owners managing multiple properties, buildings, and units.
 
 No installation required. Your data stays on your machine — no cloud, no subscription, no internet connection needed.
+
+---
+
+## Screenshots
+
+<table>
+<tr>
+<td><img src="docs/screenshots/dashboard-dark.png" alt="Dashboard (Dark)" /></td>
+<td><img src="docs/screenshots/dashboard-light.png" alt="Dashboard (Light)" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Dashboard — Dark Theme</sub></td>
+<td align="center"><sub>Dashboard — Light Theme</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/sozlesmeler.png" alt="Contracts" /></td>
+<td><img src="docs/screenshots/raporlar.png" alt="Reports" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Contracts</sub></td>
+<td align="center"><sub>Reports</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/kiracilar.png" alt="Tenants" /></td>
+<td><img src="docs/screenshots/giderler.png" alt="Expenses" /></td>
+</tr>
+<tr>
+<td align="center"><sub>Tenants</sub></td>
+<td align="center"><sub>Expenses</sub></td>
+</tr>
+</table>
 
 ---
 

@@ -50,21 +50,44 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const property = await db.property.findUnique({ where: { id: Number(id) } });
+    const propId = Number(id);
+
+    const property = await db.property.findUnique({ where: { id: propId } });
     if (!property) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
 
-    const activeUnits = await db.unit.count({
-      where: { propertyId: Number(id), contracts: { some: { status: 'active' } } },
-    });
-    if (activeUnits > 0) {
-      return NextResponse.json(
-        { error: 'Aktif kiracısı olan bina arşivlenemez. Önce sözleşmeleri sonlandırın.' },
-        { status: 409 },
-      );
+    // Cascade hard delete: payments → charges → contracts → units → property
+    const units = await db.unit.findMany({ where: { propertyId: propId }, select: { id: true } });
+    const unitIds = units.map(u => u.id);
+
+    if (unitIds.length > 0) {
+      const contracts = await db.contract.findMany({
+        where: { unitId: { in: unitIds } },
+        select: { id: true },
+      });
+      const contractIds = contracts.map(c => c.id);
+
+      if (contractIds.length > 0) {
+        const charges = await db.rentCharge.findMany({
+          where: { contractId: { in: contractIds } },
+          select: { id: true },
+        });
+        const chargeIds = charges.map(c => c.id);
+
+        if (chargeIds.length > 0) {
+          await db.payment.deleteMany({ where: { rentChargeId: { in: chargeIds } } });
+          await db.rentCharge.deleteMany({ where: { id: { in: chargeIds } } });
+        }
+
+        await db.contractIncrease.deleteMany({ where: { contractId: { in: contractIds } } });
+        await db.contract.deleteMany({ where: { id: { in: contractIds } } });
+      }
+
+      await db.expense.updateMany({ where: { propertyId: propId }, data: { propertyId: null } });
+      await db.unit.deleteMany({ where: { propertyId: propId } });
     }
 
-    await db.property.update({ where: { id: Number(id) }, data: { isArchived: true } });
-    return NextResponse.json({ ok: true, message: 'Bina arşivlendi' });
+    await db.property.delete({ where: { id: propId } });
+    return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

@@ -49,21 +49,37 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const db = getUserDb(session.id);
 
     const { id } = await params;
-    const owner = await db.owner.findUnique({ where: { id: Number(id) } });
+    const ownerId = Number(id);
+    const owner = await db.owner.findUnique({ where: { id: ownerId } });
     if (!owner) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
 
-    const activeUnits = await db.unit.count({
-      where: { property: { ownerId: Number(id) }, contracts: { some: { status: 'active' } } },
-    });
-    if (activeUnits > 0) {
-      return NextResponse.json(
-        { error: 'Aktif kiracısı olan mülk sahibi arşivlenemez. Önce sözleşmeleri sonlandırın.' },
-        { status: 409 },
-      );
+    // Cascade hard delete: payments → charges → contracts → units → properties → owner
+    const properties = await db.property.findMany({ where: { ownerId }, select: { id: true } });
+    const propIds = properties.map(p => p.id);
+    if (propIds.length > 0) {
+      const units = await db.unit.findMany({ where: { propertyId: { in: propIds } }, select: { id: true } });
+      const unitIds = units.map(u => u.id);
+      if (unitIds.length > 0) {
+        const contracts = await db.contract.findMany({ where: { unitId: { in: unitIds } }, select: { id: true } });
+        const contractIds = contracts.map(c => c.id);
+        if (contractIds.length > 0) {
+          const charges = await db.rentCharge.findMany({ where: { contractId: { in: contractIds } }, select: { id: true } });
+          const chargeIds = charges.map(c => c.id);
+          if (chargeIds.length > 0) {
+            await db.payment.deleteMany({ where: { rentChargeId: { in: chargeIds } } });
+            await db.rentCharge.deleteMany({ where: { id: { in: chargeIds } } });
+          }
+          await db.contractIncrease.deleteMany({ where: { contractId: { in: contractIds } } });
+          await db.depositTransaction.deleteMany({ where: { contractId: { in: contractIds } } });
+          await db.contract.deleteMany({ where: { id: { in: contractIds } } });
+        }
+        await db.unit.deleteMany({ where: { id: { in: unitIds } } });
+      }
+      await db.expense.updateMany({ where: { propertyId: { in: propIds } }, data: { propertyId: null } });
+      await db.property.deleteMany({ where: { id: { in: propIds } } });
     }
-
-    await db.owner.update({ where: { id: Number(id) }, data: { isArchived: true } });
-    return NextResponse.json({ ok: true, message: 'Mülk sahibi arşivlendi' });
+    await db.owner.delete({ where: { id: ownerId } });
+    return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
