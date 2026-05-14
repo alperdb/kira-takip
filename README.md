@@ -13,6 +13,10 @@
 
 [**Indir (Windows)**](https://github.com/alperdb/kira-takip/releases/latest) &nbsp;·&nbsp; [Releases](https://github.com/alperdb/kira-takip/releases) &nbsp;·&nbsp; [English](#english)
 
+<br />
+
+<img src="docs/screenshots/dashboard-light.png" alt="KiraTakip Dashboard" width="100%" />
+
 </div>
 
 ---
